@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreditDNA — Alternative Credit Scoring for Unbanked India</title>
+<meta name="description" content="CreditDNA builds a 300-900 credit score from UPI transaction behaviour using AMD Ryzen AI on-device processing. Privacy-first alternative credit scoring for 500M unbanked Indians.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#010a04}
+::-webkit-scrollbar-thumb{background:#00ff41;border-radius:3px}
+body{background:#010a04;color:#c8f0d4;font-family:'Rajdhani',sans-serif;overflow-x:hidden;line-height:1.6}
+
+/* ── KEYFRAMES ────────────────────────────────────────── */
+@keyframes glow{0%,100%{text-shadow:0 0 12px #00ff41,0 0 24px #00ff41}50%{text-shadow:0 0 32px #00ff41,0 0 64px #00ff41,0 0 96px #00ff41}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px rgba(0,255,65,.25)}50%{box-shadow:0 0 22px rgba(0,255,65,.55)}}
+@keyframes scanline{0%{top:-2px}100%{top:100%}}
+@keyframes scoreRise{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes countUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── UTILITY ──────────────────────────────────────────── */
+.page{animation:fadeIn .35s ease}
+.btn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;border:1.5px solid #00ff41;background:transparent;color:#00ff41;padding:11px 26px;cursor:pointer;position:relative;overflow:hidden;transition:all .3s;clip-path:polygon(7px 0%,100% 0%,calc(100% - 7px) 100%,0% 100%)}
+.btn:hover{background:#00ff41;color:#010a04;box-shadow:0 0 28px rgba(0,255,65,.65)}
+.btn.solid{background:#00ff41;color:#010a04}
+.btn.solid:hover{background:#00cc33;box-shadow:0 0 36px rgba(0,255,65,.8)}
+.btn.sm{font-size:9px;padding:8px 18px}
+.card{background:rgba(0,18,7,.92);border:1px solid rgba(0,255,65,.2);border-radius:3px;transition:border-color .3s,box-shadow .3s}
+.card:hover{border-color:rgba(0,255,65,.42);box-shadow:0 0 18px rgba(0,255,65,.07)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}
+.section{padding:72px 28px;max-width:1120px;margin:0 auto}
+.section-label{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:4px;color:#00ff41;margin-bottom:10px}
+.section-title{font-family:'Orbitron',sans-serif;font-size:clamp(22px,4vw,36px);font-weight:900;color:#c8f0d4}
+.divider{border:none;border-top:1px solid rgba(0,255,65,.08);margin:0}
+input,select,textarea{background:rgba(0,20,8,.85);border:1px solid rgba(0,255,65,.2);color:#c8f0d4;padding:11px 15px;font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;width:100%;border-radius:2px;transition:all .3s}
+input:focus,select:focus,textarea:focus{border-color:#00ff41;box-shadow:0 0 14px rgba(0,255,65,.2)}
+input::placeholder,textarea::placeholder{color:#3a6a48}
+select option{background:#010a04}
+label.lbl{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;display:block;margin-bottom:5px}
+.field{margin-bottom:18px}
+.err{background:rgba(255,68,68,.08);border:1px solid rgba(255,68,68,.3);border-radius:3px;padding:11px 15px;margin-bottom:16px;color:#ff7777;font-size:14px}
+.nav-btn{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:rgba(200,240,212,.6);cursor:pointer;transition:all .3s;padding:4px 0;border:none;border-bottom:1px solid transparent;background:none;text-transform:uppercase}
+.nav-btn:hover,.nav-btn.active{color:#00ff41;border-bottom-color:#00ff41}
+#toast{position:fixed;bottom:22px;right:22px;z-index:9999;padding:13px 20px;font-size:14px;font-family:'Rajdhani',sans-serif;display:none;background:rgba(0,18,7,.98);border:1px solid #00ff41;border-left:4px solid #00ff41;color:#c8f0d4;box-shadow:0 0 22px rgba(0,255,65,.3);border-radius:2px;max-width:300px;animation:fadeInUp .3s ease}
+
+/* ── NAV ──────────────────────────────────────────────── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(1,10,4,.96);border-bottom:1px solid rgba(0,255,65,.12);backdrop-filter:blur(14px);height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 28px}
+.nav-logo{cursor:pointer;display:flex;align-items:center;gap:11px}
+.nav-logo svg{flex-shrink:0}
+.nav-logo-text{line-height:1}
+.nav-logo-title{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:900;color:#00ff41;letter-spacing:3px;text-shadow:0 0 12px rgba(0,255,65,.45)}
+.nav-logo-sub{font-family:'Orbitron',sans-serif;font-size:7px;color:rgba(0,255,65,.38);letter-spacing:2.5px;margin-top:3px}
+#nav-links{display:flex;align-items:center;gap:26px}
+
+/* ── HERO ─────────────────────────────────────────────── */
+#hero{min-height:100vh;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 28px 60px;overflow:hidden}
+#three-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,255,65,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,65,.02) 1px,transparent 1px);background-size:55px 55px;pointer-events:none}
+.scanline{position:absolute;left:0;right:0;height:1px;background:rgba(0,255,65,.07);animation:scanline 7s linear infinite;pointer-events:none}
+.corner{position:absolute;width:36px;height:36px;pointer-events:none}
+.corner.tl{top:82px;left:16px;border-top:2px solid rgba(0,255,65,.3);border-left:2px solid rgba(0,255,65,.3)}
+.corner.tr{top:82px;right:16px;border-top:2px solid rgba(0,255,65,.3);border-right:2px solid rgba(0,255,65,.3)}
+.corner.bl{bottom:16px;left:16px;border-bottom:2px solid rgba(0,255,65,.3);border-left:2px solid rgba(0,255,65,.3)}
+.corner.br{bottom:16px;right:16px;border-bottom:2px solid rgba(0,255,65,.3);border-right:2px solid rgba(0,255,65,.3)}
+.hero-inner{position:relative;z-index:1;text-align:center;max-width:950px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.25);border-radius:100px;padding:5px 18px;margin-bottom:22px;animation:fadeInUp .5s ease}
+.hero-badge-dot{width:5px;height:5px;border-radius:50%;background:#00ff41;box-shadow:0 0 8px #00ff41;animation:blink 2s infinite}
+.hero-badge span{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41}
+.hero-title-credit{font-family:'Orbitron',sans-serif;font-size:clamp(52px,10vw,110px);font-weight:900;line-height:.92;color:#00ff41;animation:glow 3.5s ease infinite}
+.hero-title-dna{font-family:'Orbitron',sans-serif;font-size:clamp(52px,10vw,110px);font-weight:900;line-height:.92;color:#fff;text-shadow:0 0 30px rgba(255,255,255,.15)}
+.hero-score-pill{display:inline-flex;align-items:center;gap:16px;background:rgba(0,18,7,.88);border:1px solid rgba(0,255,65,.28);border-radius:100px;padding:9px 26px;margin:24px auto 0;animation:fadeInUp .6s ease .2s both}
+.hero-score-num{font-family:'Orbitron',sans-serif;font-size:28px;font-weight:900;color:#00ff41;animation:scoreRise .8s ease .5s both}
+.hero-score-label{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;color:rgba(0,255,65,.45)}
+.hero-score-tier{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#00ff41}
+.hero-divider{width:1px;height:34px;background:rgba(0,255,65,.2)}
+.hero-score-desc{font-size:11px;color:rgba(200,240,212,.5);text-align:left;line-height:1.6}
+.hero-sub{font-size:17px;color:rgba(200,240,212,.58);max-width:580px;margin:20px auto 40px;line-height:1.85;animation:fadeInUp .6s ease .3s both}
+.hero-ctas{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;animation:fadeInUp .6s ease .4s both;margin-bottom:52px}
+
+/* ── STATS BAR ────────────────────────────────────────── */
+.stats-bar{background:rgba(0,255,65,.04);border-top:1px solid rgba(0,255,65,.1);border-bottom:1px solid rgba(0,255,65,.1);padding:22px 28px;display:flex;justify-content:center;gap:clamp(20px,5vw,72px);flex-wrap:wrap}
+.stat-item{text-align:center}
+.stat-val{font-family:'Orbitron',sans-serif;font-size:clamp(20px,3vw,26px);font-weight:900;color:#00ff41}
+.stat-lbl{font-size:11px;color:rgba(200,240,212,.38);letter-spacing:1px;margin-top:3px}
+
+/* ── PROBLEM SECTION ──────────────────────────────────── */
+.problem-bg{background:rgba(0,8,3,.7);border-top:1px solid rgba(0,255,65,.07);border-bottom:1px solid rgba(0,255,65,.07)}
+.problem-grid{display:grid;grid-template-columns:1fr 1fr;gap:36px;align-items:center}
+@media(max-width:700px){.problem-grid{grid-template-columns:1fr}}
+.problem-headline{font-family:'Orbitron',sans-serif;font-size:clamp(18px,3vw,28px);font-weight:900;color:#c8f0d4;line-height:1.3;margin-bottom:20px}
+.problem-headline span{color:#ff5555}
+.problem-stat{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
+.problem-stat-num{font-family:'Orbitron',sans-serif;font-size:32px;font-weight:900;color:#ff5555;line-height:1;flex-shrink:0}
+.problem-stat-text{font-size:14px;color:rgba(200,240,212,.6);line-height:1.65}
+.problem-box{padding:22px;background:rgba(0,18,7,.9);border:1px solid rgba(255,85,85,.2);border-radius:3px;margin-bottom:14px}
+.problem-box-title{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;color:#ff7777;margin-bottom:8px}
+.problem-box-text{font-size:13px;color:rgba(200,240,212,.55);line-height:1.7}
+
+/* ── HOW IT WORKS ─────────────────────────────────────── */
+.step-card{padding:28px;position:relative;overflow:hidden}
+.step-num{font-family:'Orbitron',sans-serif;font-size:48px;font-weight:900;color:rgba(0,255,65,.06);position:absolute;top:12px;right:18px;line-height:1}
+.step-icon{font-size:28px;margin-bottom:14px}
+.step-label{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;margin-bottom:5px}
+.step-title{font-family:'Orbitron',sans-serif;font-size:14px;font-weight:700;color:#c8f0d4;margin-bottom:10px}
+.step-desc{font-size:13px;color:rgba(200,240,212,.52);line-height:1.7}
+.step-connector{display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:18px;color:rgba(0,255,65,.3);padding:0 4px;padding-top:40px}
+.steps-row{display:grid;grid-template-columns:1fr auto 1fr auto 1fr auto 1fr;gap:0;align-items:start}
+@media(max-width:900px){.steps-row{grid-template-columns:1fr 1fr}.step-connector{display:none}}
+@media(max-width:500px){.steps-row{grid-template-columns:1fr}.step-connector{display:none}}
+
+/* ── UNIQUE ANGLE ─────────────────────────────────────── */
+.angle-bg{background:rgba(0,8,3,.7);border-top:1px solid rgba(0,255,65,.07);border-bottom:1px solid rgba(0,255,65,.07)}
+.vs-table{width:100%;border-collapse:separate;border-spacing:0}
+.vs-table th{font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;padding:12px 18px;border-bottom:1px solid rgba(0,255,65,.12)}
+.vs-table td{font-size:13px;padding:12px 18px;border-bottom:1px solid rgba(0,255,65,.05);vertical-align:middle}
+.vs-table tr:last-child td{border-bottom:none}
+.vs-table .bad{color:#ff7777}
+.vs-table .good{color:#00ff41;font-weight:600}
+.formula-box{background:rgba(0,18,7,.9);border:1px solid rgba(0,255,65,.2);border-radius:3px;padding:26px;font-family:'Rajdhani',monospace}
+.formula-line{font-size:15px;color:rgba(200,240,212,.7);line-height:2.2}
+.formula-plus{color:rgba(0,255,65,.4);margin:0 8px}
+.formula-eq{color:#00ff41;font-weight:700;margin:0 8px}
+.formula-result{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#00ff41;margin-top:10px;letter-spacing:1px}
+.four-pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.pillar{padding:14px 16px;background:rgba(0,255,65,.05);border:1px solid rgba(0,255,65,.15);border-radius:2px;display:flex;align-items:center;gap:10px;font-family:'Orbitron',sans-serif;font-size:10px;color:#00ff41;letter-spacing:1px}
+
+/* ── TECH ─────────────────────────────────────────────── */
+.tech-card{padding:22px}
+.tech-layer{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;margin-bottom:8px}
+.tech-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#c8f0d4;margin-bottom:6px}
+.tech-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:1px;padding:4px 10px;border:1px solid rgba(0,255,65,.2);border-radius:100px;color:rgba(200,240,212,.6)}
+
+/* ── REVENUE ──────────────────────────────────────────── */
+.rev-card{padding:24px;text-align:center}
+.rev-icon{font-size:30px;margin-bottom:12px}
+.rev-title{font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:1.5px;margin-bottom:8px}
+.rev-val{font-family:'Orbitron',sans-serif;font-size:22px;font-weight:900;color:#00ff41;margin-bottom:6px}
+.rev-desc{font-size:12px;color:rgba(200,240,212,.45);line-height:1.6}
+
+/* ── RAVI DEMO ────────────────────────────────────────── */
+.demo-bg{background:rgba(0,8,3,.7);border-top:1px solid rgba(0,255,65,.07);border-bottom:1px solid rgba(0,255,65,.07)}
+.demo-step{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid rgba(0,255,65,.05)}
+.demo-step:last-child{border-bottom:none}
+.demo-step-dot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px}
+.demo-step-title{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;color:#c8f0d4;margin-bottom:3px}
+.demo-step-text{font-size:13px;color:rgba(200,240,212,.5);line-height:1.6}
+
+/* ── TEAM ─────────────────────────────────────────────── */
+.team-card{padding:26px;text-align:center}
+.team-avatar{width:64px;height:64px;border-radius:3px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px}
+.team-name{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;margin-bottom:5px}
+.team-role{font-size:12px;color:rgba(200,240,212,.4)}
+
+/* ── TIMELINE ─────────────────────────────────────────── */
+.timeline-item{display:flex;gap:18px;margin-bottom:20px}
+.timeline-time{flex-shrink:0;width:150px;font-family:'Orbitron',sans-serif;font-size:9px;color:#00ff41;letter-spacing:1px;line-height:1.7;text-align:right;padding-top:2px}
+.timeline-dot-col{flex-shrink:0;display:flex;flex-direction:column;align-items:center}
+.timeline-dot{width:11px;height:11px;border-radius:50%;background:#00ff41;box-shadow:0 0 10px #00ff41}
+.timeline-line{width:1px;flex:1;background:rgba(0,255,65,.18);margin-top:3px;min-height:36px}
+.timeline-content-title{font-family:'Orbitron',sans-serif;font-size:12px;font-weight:700;color:#c8f0d4;margin-bottom:3px}
+.timeline-content-text{font-size:12px;color:rgba(200,240,212,.4)}
+
+/* ── AUTH FORMS ───────────────────────────────────────── */
+.auth-wrap{min-height:calc(100vh - 62px);display:flex;align-items:center;justify-content:center;padding:60px 20px;background:radial-gradient(ellipse at 50% 40%,rgba(0,255,65,.04) 0%,transparent 65%)}
+.auth-box{width:100%;max-width:440px;animation:fadeInUp .4s ease}
+.auth-header{text-align:center;margin-bottom:30px}
+.auth-header .section-label{display:block;margin-bottom:8px}
+.auth-header h1{font-family:'Orbitron',sans-serif;font-size:26px;font-weight:900;color:#c8f0d4}
+.auth-header p{color:rgba(200,240,212,.4);margin-top:7px;font-size:13px}
+.auth-card{padding:34px;animation:pulse 3s infinite}
+.step-circles{display:flex;align-items:center;justify-content:center;gap:0;margin-bottom:8px}
+.step-circle{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;transition:all .3s}
+.step-bar{width:55px;height:2px}
+
+/* ── DASHBOARD ────────────────────────────────────────── */
+.db-wrap{padding:26px 28px 60px;max-width:1100px;margin:0 auto}
+.db-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;flex-wrap:wrap;gap:14px}
+.db-title{font-family:'Orbitron',sans-serif;font-size:clamp(20px,4vw,30px);font-weight:900;color:#c8f0d4}
+.db-sub{color:rgba(200,240,212,.4);font-size:13px;margin-top:5px}
+.stat-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:22px}
+.stat-card{padding:18px}
+.stat-card .sc-icon{font-size:20px;margin-bottom:6px}
+.stat-card .sc-lbl{font-family:'Orbitron',sans-serif;font-size:8px;letter-spacing:2px;margin-bottom:3px}
+.stat-card .sc-val{font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;color:#c8f0d4}
+.db-grid{display:grid;grid-template-columns:2fr 1fr;gap:20px}
+@media(max-width:700px){.db-grid{grid-template-columns:1fr}}
+.announce-item{display:flex;gap:9px;padding:9px 0}
+.announce-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;margin-top:6px}
+.announce-title{font-size:12px;color:#c8f0d4;line-height:1.45}
+.announce-time{font-size:10px;color:rgba(200,240,212,.28);margin-top:2px}
+
+/* ── SUBMIT ───────────────────────────────────────────── */
+.sub-wrap{padding:26px 20px 60px;max-width:700px;margin:0 auto}
+.sub-progress-bar{display:flex;gap:3px;margin-bottom:6px}
+.sub-progress-seg{flex:1;height:3px;border-radius:2px;cursor:pointer;transition:all .3s}
+
+/* ── PROFILE ──────────────────────────────────────────── */
+.profile-wrap{padding:26px 28px 60px;max-width:700px;margin:0 auto}
+
+/* ── FOOTER ───────────────────────────────────────────── */
+footer{border-top:1px solid rgba(0,255,65,.06);padding:24px;text-align:center}
+footer .f-brand{font-family:'Orbitron',sans-serif;font-size:10px;color:rgba(0,255,65,.2);letter-spacing:2px}
+footer .f-sub{font-size:11px;color:rgba(200,240,212,.15);margin-top:5px}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ─────────────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="nav-logo" onclick="goPage('landing')">
+    <svg width="32" height="32" viewBox="0 0 32 32">
+      <rect width="32" height="32" rx="3" fill="rgba(0,255,65,.08)" stroke="rgba(0,255,65,.38)" stroke-width="1"/>
+      <path d="M8 6 Q16 12 24 6" stroke="#00ff41" stroke-width="1.5" fill="none" opacity=".9"/>
+      <path d="M8 10 Q16 16 24 10" stroke="#00ff41" stroke-width="1.5" fill="none" opacity=".65"/>
+      <path d="M8 14 Q16 20 24 14" stroke="#00ff41" stroke-width="1.5" fill="none" opacity=".45"/>
+      <path d="M8 18 Q16 24 24 18" stroke="#00ff41" stroke-width="1.5" fill="none" opacity=".65"/>
+      <path d="M8 22 Q16 28 24 22" stroke="#00ff41" stroke-width="1.5" fill="none" opacity=".9"/>
+      <line x1="16" y1="6" x2="16" y2="28" stroke="#00ff41" stroke-width=".5" stroke-dasharray="2,2" opacity=".25"/>
+    </svg>
+    <div class="nav-logo-text">
+      <div class="nav-logo-title">CreditDNA</div>
+      <div class="nav-logo-sub">ALT CREDIT SCORING · INDIA</div>
+    </div>
+  </div>
+  <div id="nav-links"></div>
+</nav>
+
+<!-- ── APP ──────────────────────────────────────────────────── -->
+<div id="app" style="padding-top:62px;min-height:100vh"></div>
+
+<!-- ── TOAST ────────────────────────────────────────────────── -->
+<div id="toast"></div>
+
+<!-- ── THREE.JS ──────────────────────────────────────────────── -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+/* ════════════════════════════════════════════════════════
+   STORAGE / STATE
+═══════════════════════════════════════════════════════ */
+const DB = {
+  users: () => JSON.parse(localStorage.getItem('cdn_users') || '[]'),
+  saveUsers: u => localStorage.setItem('cdn_users', JSON.stringify(u)),
+  user: () => { const u = localStorage.getItem('cdn_user'); return u ? JSON.parse(u) : null },
+  saveUser: u => localStorage.setItem('cdn_user', JSON.stringify(u)),
+  clearUser: () => localStorage.removeItem('cdn_user'),
+  subs: () => JSON.parse(localStorage.getItem('cdn_subs') || '[]'),
+  saveSubs: s => localStorage.setItem('cdn_subs', JSON.stringify(s))
+};
+
+let PAGE = 'landing', USER = DB.user(), THREE_CLEANUP = null, CD_INTERVAL = null;
+
+const TRACKS = [
+  { n: 'FinTech / Financial Inclusion — AMD Slingshot 2026', i: '💳', c: '#ffdd44' },
+  { n: 'AI / Machine Learning', i: '🤖', c: '#00ff41' },
+  { n: 'HealthTech', i: '🏥', c: '#41ffee' },
+  { n: 'Cybersecurity', i: '🔐', c: '#ff5555' },
+  { n: 'EdTech', i: '📚', c: '#cc44ff' },
+  { n: 'Open Innovation', i: '🚀', c: '#44ddff' }
+];
+
+/* ════════════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════════ */
+let _tt;
+function toast(msg, type = 'success') {
+  const el = document.getElementById('toast');
+  const colors = { success: '#00ff41', error: '#ff4444', warning: '#ffcc00', info: '#44bbff' };
+  const c = colors[type] || colors.success;
+  el.style.borderLeftColor = c; el.style.borderColor = c; el.style.boxShadow = `0 0 20px ${c}40`;
+  el.textContent = msg; el.style.display = 'block';
+  clearTimeout(_tt); _tt = setTimeout(() => el.style.display = 'none', 3400);
+}
+
+/* ════════════════════════════════════════════════════════
+   COUNTDOWN
+═══════════════════════════════════════════════════════ */
+function startCountdown(id) {
+  clearInterval(CD_INTERVAL);
+  const target = new Date('2025-04-20T09:00:00');
+  const tick = () => {
+    const el = document.getElementById(id); if (!el) { clearInterval(CD_INTERVAL); return; }
+    const d = target - Date.now();
+    const pad = n => String(Math.floor(n)).padStart(2, '0');
+    if (d <= 0) { el.innerHTML = `<span style="color:#00ff41;font-family:Orbitron,sans-serif;font-size:14px;letter-spacing:2px">EVENT LIVE NOW!</span>`; return; }
+    const D = pad(d / 86400000), H = pad((d % 86400000) / 3600000), M = pad((d % 3600000) / 60000), S = pad((d % 60000) / 1000);
+    el.innerHTML = `<div style="display:flex;gap:16px;justify-content:center">${[['DAYS', D], ['HRS', H], ['MIN', M], ['SEC', S]].map(([l, v]) => `<div style="text-align:center"><div style="font-family:Orbitron,sans-serif;font-size:clamp(20px,3.5vw,34px);font-weight:900;color:#00ff41;text-shadow:0 0 12px rgba(0,255,65,.45)">${v}</div><div style="font-family:Orbitron,sans-serif;font-size:8px;color:rgba(0,255,65,.35);letter-spacing:2px;margin-top:3px">${l}</div></div>`).join('')}</div>`;
+  };
+  tick(); CD_INTERVAL = setInterval(tick, 1000);
+}
+
+/* ════════════════════════════════════════════════════════
+   ROUTER
+═══════════════════════════════════════════════════════ */
+function goPage(p) {
+  const prot = ['dashboard', 'submit', 'profile'];
+  if (prot.includes(p) && !USER) { toast('Please login first', 'warning'); p = 'login'; }
+  PAGE = p; renderNav(); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* ════════════════════════════════════════════════════════
+   THREE.JS — DNA HELIX
+═══════════════════════════════════════════════════════ */
+function initThree(canvasId) {
+  if (THREE_CLEANUP) { THREE_CLEANUP(); THREE_CLEANUP = null; }
+  const canvas = document.getElementById(canvasId); if (!canvas) return;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(70, 1, .1, 1000);
+  camera.position.z = 7;
+  const resize = () => {
+    const w = canvas.parentElement.clientWidth, h = canvas.parentElement.clientHeight;
+    renderer.setSize(w, h); camera.aspect = w / h; camera.updateProjectionMatrix();
+  };
+  resize(); window.addEventListener('resize', resize);
+
+  // DNA Double Helix
+  const helixGroup = new THREE.Group();
+  const N = 80;
+  const strand1 = [], strand2 = [];
+  for (let i = 0; i < N; i++) {
+    const t = i / N * Math.PI * 8, r = 2;
+    strand1.push(new THREE.Vector3(Math.cos(t) * r, i / N * 14 - 7, Math.sin(t) * r));
+    strand2.push(new THREE.Vector3(Math.cos(t + Math.PI) * r, i / N * 14 - 7, Math.sin(t + Math.PI) * r));
+  }
+  const mkLine = (pts, color, op) => {
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    return new THREE.Line(geo, new THREE.LineBasicMaterial({ color, transparent: true, opacity: op }));
+  };
+  helixGroup.add(mkLine(strand1, 0x00ff41, .6));
+  helixGroup.add(mkLine(strand2, 0x44ffcc, .4));
+  for (let i = 0; i < N; i += 5) {
+    helixGroup.add(mkLine([strand1[i], strand2[i]], 0x00ff41, .18));
+    const sg = new THREE.SphereGeometry(.09, 6, 6);
+    const sm = new THREE.MeshBasicMaterial({ color: 0x00ff41, transparent: true, opacity: .8 });
+    const s1 = new THREE.Mesh(sg, sm); s1.position.copy(strand1[i]); helixGroup.add(s1);
+    const s2 = new THREE.Mesh(sg.clone(), sm.clone()); s2.position.copy(strand2[i]); helixGroup.add(s2);
+  }
+  scene.add(helixGroup);
+
+  // Icosahedron
+  const ico = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(3.6, 0),
+    new THREE.MeshBasicMaterial({ color: 0x00ff41, wireframe: true, transparent: true, opacity: .06 })
+  );
+  scene.add(ico);
+
+  // Particles
+  const pPos = new Float32Array(380 * 3);
+  for (let i = 0; i < 380; i++) { pPos[i * 3] = (Math.random() - .5) * 24; pPos[i * 3 + 1] = (Math.random() - .5) * 24; pPos[i * 3 + 2] = (Math.random() - .5) * 10; }
+  const pGeo = new THREE.BufferGeometry(); pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  scene.add(new THREE.Points(pGeo, new THREE.PointsMaterial({ color: 0x00ff41, size: .05, transparent: true, opacity: .45 })));
+
+  let mx = 0, my = 0;
+  const onMouse = e => { mx = (e.clientX / window.innerWidth - .5) * 2; my = -(e.clientY / window.innerHeight - .5) * 2; };
+  window.addEventListener('mousemove', onMouse);
+
+  let t = 0, rafId;
+  const animate = () => {
+    rafId = requestAnimationFrame(animate); t += .003;
+    helixGroup.rotation.y = t * .3 + mx * .05;
+    helixGroup.rotation.x = my * .04;
+    ico.rotation.x = t * .07; ico.rotation.y = -t * .09;
+    renderer.render(scene, camera);
+  };
+  animate();
+  THREE_CLEANUP = () => {
+    cancelAnimationFrame(rafId);
+    window.removeEventListener('mousemove', onMouse);
+    window.removeEventListener('resize', resize);
+    renderer.dispose();
+  };
+}
+
+/* ════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════ */
+function doLogin(email, pass) {
+  const u = DB.users().find(u => u.email === email && u.password === pass);
+  if (u) { DB.saveUser(u); USER = u; toast(`Welcome back, ${u.name}! 🧬`); goPage('dashboard'); return true; }
+  return false;
+}
+function doRegister(data) {
+  const users = DB.users();
+  if (users.find(u => u.email === data.email)) { toast('Email already registered', 'error'); return false; }
+  const u = { ...data, id: Date.now(), joined: new Date().toISOString() };
+  users.push(u); DB.saveUsers(users); DB.saveUser(u); USER = u;
+  toast('Registered! Welcome to HackNova 3.0 🧬'); goPage('dashboard'); return true;
+}
+function doLogout() { DB.clearUser(); USER = null; toast('See you at the hackathon! 👋', 'info'); goPage('landing'); }
+
+/* ════════════════════════════════════════════════════════
+   NAV RENDER
+═══════════════════════════════════════════════════════ */
+function renderNav() {
+  const u = USER, p = PAGE;
+  const lnk = (id, label) => `<button class="nav-btn ${p === id ? 'active' : ''}" onclick="goPage('${id}')">${label}</button>`;
+  let h = lnk('landing', 'Home') + lnk('about', 'About');
+  if (u) {
+    h += lnk('dashboard', 'Dashboard') + lnk('submit', 'Submit') + lnk('profile', u.name.split(' ')[0]);
+    h += `<button onclick="doLogout()" style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:1.5px;border:1.5px solid rgba(255,68,68,.45);color:#ff7777;padding:8px 16px;cursor:pointer;background:transparent;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .3s">Logout</button>`;
+  } else {
+    h += lnk('login', 'Login');
+    h += `<button onclick="goPage('register')" style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:1.5px;border:1.5px solid #00ff41;color:#010a04;background:#00ff41;padding:9px 20px;cursor:pointer;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .3s" onmouseover="this.style.background='#00cc33'" onmouseout="this.style.background='#00ff41'">Register</button>`;
+  }
+  document.getElementById('nav-links').innerHTML = h;
+}
+
+/* ════════════════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════════════ */
+function renderLanding() {
+  document.getElementById('app').innerHTML = `
+  <div class="page">
+
+  <!-- HERO -->
+  <section id="hero">
+    <canvas id="three-canvas"></canvas>
+    <div class="hero-grid"></div>
+    <div class="scanline"></div>
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+    <div class="hero-inner">
+      <div class="hero-badge" style="animation:fadeInUp .5s ease">
+        <span class="hero-badge-dot"></span>
+        <span>HACKNOVA 3.0 · BOTSQUAD · FINTECH / AMD SLINGSHOT 2026</span>
+      </div>
+      <div style="animation:fadeInUp .6s ease .1s both">
+        <div class="hero-title-credit">Credit</div>
+        <div class="hero-title-dna">DNA</div>
+      </div>
+      <div class="hero-score-pill" style="animation:fadeInUp .6s ease .15s both">
+        <div>
+          <div class="hero-score-label">DEMO SCORE</div>
+          <div class="hero-score-num">718</div>
+          <div class="hero-score-tier">GOOD ●</div>
+        </div>
+        <div class="hero-divider"></div>
+        <div class="hero-score-desc">UPI behaviour → AMD Ryzen AI NPU<br>On-device · Privacy-first · &lt;200ms</div>
+      </div>
+      <p class="hero-sub" style="animation:fadeInUp .6s ease .25s both">
+        Alternative credit scoring for <strong style="color:#00ff41">500M unbanked Indians</strong>.<br>
+        Your UPI history is your credit history — processed locally, never shared.
+      </p>
+      <div class="hero-ctas" style="animation:fadeInUp .6s ease .35s both">
+        ${USER
+          ? `<button class="btn solid" onclick="goPage('dashboard')">Dashboard →</button><button class="btn" onclick="goPage('submit')">Submit Project</button>`
+          : `<button class="btn solid" onclick="goPage('register')">Register Now →</button><button class="btn" onclick="goPage('about')">Learn More</button>`}
+      </div>
+      <div id="hero-cd" style="animation:fadeInUp .6s ease .45s both"></div>
+    </div>
+  </section>
+
+  <!-- STATS BAR -->
+  <div class="stats-bar">
+    ${[['500M', 'Unbanked Indians'], ['₹4B', 'Market Size'], ['25% YoY', 'Market Growth'], ['<200ms', 'Inference Latency'], ['300–900', 'Score Range'], ['50+', 'Behavioural Signals']].map(([v, l]) => `
+    <div class="stat-item"><div class="stat-val">${v}</div><div class="stat-lbl">${l}</div></div>`).join('')}
+  </div>
+
+  <!-- THE PROBLEM -->
+  <div class="problem-bg">
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">THE PROBLEM</div>
+      <h2 class="section-title">500 Million Indians Are Invisible to Banks</h2>
+      <p style="color:rgba(200,240,212,.45);margin-top:10px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.8;font-size:15px">Not because they're poor — but because banks have no data on them. CIBIL only covers salaried formal-sector workers. UPI-active Indians generate rich financial behaviour data that goes entirely unused.</p>
+    </div>
+    <div class="problem-grid">
+      <div>
+        <div class="problem-stat"><div class="problem-stat-num">500M</div><div class="problem-stat-text">Indians have NO credit history. Gig workers, farmers, students, daily wage earners — active UPI users who can't access formal credit.</div></div>
+        <div class="problem-stat"><div class="problem-stat-num" style="color:#ffdd44">40%</div><div class="problem-stat-text">Of loan applications rejected purely due to lack of credit data — not due to poor financial health.</div></div>
+        <div class="problem-stat"><div class="problem-stat-num" style="color:#cc44ff">$4B</div><div class="problem-stat-text">Credit scoring market in India, growing 25% YoY — completely underserved by existing solutions.</div></div>
+      </div>
+      <div>
+        <div class="problem-box">
+          <div class="problem-box-title">CIBIL'S BLIND SPOT</div>
+          <div class="problem-box-text">India's dominant credit bureau CIBIL only covers salaried formal-sector workers. 500M UPI-active Indians — Zomato/Swiggy delivery partners, farmers, SME owners — generate rich digital financial behaviour every day that CIBIL completely ignores.</div>
+        </div>
+        <div class="problem-box">
+          <div class="problem-box-title">THE CLOUD PRIVACY PROBLEM</div>
+          <div class="problem-box-text">Existing alternatives like CreditVidya send ALL your UPI transaction data to cloud servers. For 500M users in post-DPDP Act India, this is a privacy crisis waiting to happen.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div style="text-align:center;margin-bottom:48px">
+      <div class="section-label">SYSTEM ARCHITECTURE</div>
+      <h2 class="section-title">Four Steps to a Credit Score</h2>
+      <p style="color:rgba(200,240,212,.4);margin-top:10px;font-size:14px">User Device → AMD Ryzen AI NPU → Score Engine → Flask REST API → Bank/NBFC</p>
+    </div>
+    <div class="steps-row">
+      ${[
+        ['01','📱','#00ff41','Collect','User consents. UPI history loaded on-device. Raw data never leaves the phone. DPDP Act compliant by architecture.'],
+        ['→','','','',''],
+        ['02','⚡','#ffdd44','Compute','AMD Ryzen AI NPU runs feature engineering — 50+ signals extracted locally: frequency, merchant categories, utility payments, spend consistency, seasonal patterns.'],
+        ['→','','','',''],
+        ['03','🧠','#cc44ff','Score','RandomForest ML generates credit score 300–900 + confidence level + plain-English factor explanation. Latency &lt;200ms.'],
+        ['→','','','',''],
+        ['04','🔗','#44ddff','API','Bank calls POST /api/score with consent token. Receives score + tier + top factors only. Zero raw transactions ever transmitted.']
+      ].map(([n, ico, c, t, d]) => n === '→'
+        ? `<div class="step-connector">→</div>`
+        : `<div class="card step-card" style="border-color:${c}18">
+            <div class="step-num">${n}</div>
+            <div class="step-icon">${ico}</div>
+            <div class="step-label" style="color:${c}">${n} — ${t.toUpperCase()}</div>
+            <div class="step-title">${t}</div>
+            <div class="step-desc">${d}</div>
+           </div>`
+      ).join('')}
+    </div>
+  </div>
+
+  <!-- UNIQUE ANGLE -->
+  <div class="angle-bg">
+  <div class="section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start">
+    <div>
+      <div class="section-label">THE UNIQUE ANGLE</div>
+      <h2 class="section-title" style="margin-bottom:18px">Why CreditDNA Wins</h2>
+      <p style="color:rgba(200,240,212,.5);line-height:1.8;font-size:14px;margin-bottom:24px">No idea is 100% original. What matters is: does your implementation have a unique angle nobody else has?</p>
+      <div class="formula-box" style="margin-bottom:22px">
+        <div class="formula-line">Existing Problem <span class="formula-plus">+</span></div>
+        <div class="formula-line">Existing Solution (with a flaw) <span class="formula-plus">+</span></div>
+        <div class="formula-line">Your Fix using AMD RYZEN AI <span class="formula-eq">=</span></div>
+        <div class="formula-result">WINNING HACKATHON IDEA ⚡</div>
+      </div>
+      <div style="background:rgba(0,255,65,.04);border:1px solid rgba(0,255,65,.15);border-radius:3px;padding:16px;font-size:13px;color:rgba(200,240,212,.6);line-height:1.8">
+        <strong style="color:#ffdd44">CreditVidya exists</strong> BUT sends data to cloud → Privacy risk for 500M users → <strong style="color:#00ff41">CreditDNA fixes this with AMD on-device AI</strong>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:16px">THE 4 UNIQUE PILLARS</div>
+      <div class="four-pillars" style="margin-bottom:22px">
+        ${[['✅','Alt Credit Scoring'],['✅','AMD Ryzen AI NPU'],['✅','No raw data leaves phone'],['✅','Works offline']].map(([i, l]) => `
+        <div class="pillar">${i} <span>${l}</span></div>`).join('')}
+      </div>
+      <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;margin-bottom:14px">VS COMPETITORS</div>
+      <div style="overflow:hidden;border:1px solid rgba(0,255,65,.12);border-radius:3px">
+        <table class="vs-table" style="width:100%">
+          <thead>
+            <tr style="background:rgba(0,255,65,.04)">
+              <th style="color:rgba(0,255,65,.45);text-align:left">Feature</th>
+              <th style="color:#ff7777;text-align:center">CreditVidya</th>
+              <th style="color:#00ff41;text-align:center">CreditDNA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${[
+              ['UPI as credit signal','✓','✓'],
+              ['On-device ML (AMD NPU)','✗','✓'],
+              ['Raw data stays on phone','✗','✓'],
+              ['Works offline','✗','✓'],
+              ['DPDP Act compliant by arch.','✗','✓'],
+              ['Bank REST API','✓','✓'],
+            ].map(([f, a, b]) => `<tr><td style="color:rgba(200,240,212,.6)">${f}</td><td class="${a === '✓' ? 'good' : 'bad'}" style="text-align:center">${a}</td><td class="good" style="text-align:center">${b}</td></tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    </div>
+  </div>
+  </div>
+
+  <!-- RAVI DEMO -->
+  <div class="demo-bg">
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">LIVE DEMO SCENARIO</div>
+      <h2 class="section-title">Meet Ravi, Swiggy Delivery Partner</h2>
+      <p style="color:rgba(200,240,212,.4);margin-top:8px;font-size:14px;max-width:550px;margin-left:auto;margin-right:auto;line-height:1.7">Earns ₹25,000/month via UPI. CIBIL score: <strong style="color:#ff5555">zero</strong>. CreditDNA changes everything — in under 2 minutes.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:20px;align-items:start;margin-bottom:32px">
+      <div class="card" style="padding:22px;border-color:rgba(255,85,85,.2);text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">❌</div>
+        <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#ff7777;margin-bottom:12px">BEFORE CREDITDNA</div>
+        ${[['CIBIL Score','0 (Invisible)'],['Loan Applications','Rejected'],['Credit Access','None'],['Formal Banking','Locked out']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,85,85,.07);font-size:12px"><span style="color:rgba(200,240,212,.38)">${k}</span><span style="color:#ff7777">${v}</span></div>`).join('')}
+      </div>
+      <div class="card" style="padding:22px;border-color:rgba(0,255,65,.3);animation:pulse 2.5s infinite">
+        <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:14px;text-align:center">CREDITDNA PROCESS</div>
+        ${[
+          ['#00ff41','Ravi consents via app','UPI history loaded on-device only'],
+          ['#ffdd44','AMD Ryzen AI NPU fires','50+ signals extracted in &lt;200ms'],
+          ['#cc44ff','RandomForest scores him','718 — GOOD tier with explanation'],
+          ['#44ddff','Bank receives API call','Score + tier only. Zero raw data.'],
+        ].map(([c, t, d]) => `
+        <div class="demo-step">
+          <div class="demo-step-dot" style="background:${c}18;border:1.5px solid ${c}50;color:${c}">→</div>
+          <div><div class="demo-step-title">${t}</div><div class="demo-step-text">${d}</div></div>
+        </div>`).join('')}
+      </div>
+      <div class="card" style="padding:22px;border-color:rgba(0,255,65,.3);text-align:center">
+        <div style="font-size:28px;margin-bottom:10px">✅</div>
+        <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;margin-bottom:12px">AFTER CREDITDNA</div>
+        <div style="font-family:Orbitron,sans-serif;font-size:38px;font-weight:900;color:#00ff41;line-height:1;animation:scoreRise .8s ease">718</div>
+        <div style="font-family:Orbitron,sans-serif;font-size:10px;color:#00ff41;margin-bottom:14px;letter-spacing:1.5px">GOOD TIER</div>
+        ${[['Loan Eligibility','₹75,000'],['Via','KreditBee'],['Time Taken','< 2 minutes'],['Data Shared','Score only']].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(0,255,65,.06);font-size:12px"><span style="color:rgba(200,240,212,.38)">${k}</span><span style="color:#00ff41">${v}</span></div>`).join('')}
+      </div>
+    </div>
+    <div style="text-align:center;font-size:13px;color:rgba(200,240,212,.4);font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px">RAVI ACCESSES FORMAL CREDIT FOR THE FIRST TIME. THE BANK REDUCES DEFAULT RISK. CREDITDNA EARNS ₹100/QUERY. EVERYONE WINS.</div>
+  </div>
+  </div>
+
+  <!-- REVENUE MODEL -->
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">BUSINESS MODEL</div>
+      <h2 class="section-title">How CreditDNA Makes Money</h2>
+    </div>
+    <div class="grid4" style="margin-bottom:28px">
+      ${[
+        ['💰','Revenue Per Query','₹50–200','Banks & NBFCs pay per API call. Millions of queries/month at scale.','#ffdd44'],
+        ['🏦','Who Pays','HDFC, Axis, PayU, BharatPe, KreditBee','All desperately need alternative credit data for underwriting.','#00ff41'],
+        ['📈','Market Size','$4B / 25% YoY','India credit scoring market. Replicable to SE Asia (Philippines, Indonesia, Bangladesh).','#44ddff'],
+        ['🔒','Moat','On-device privacy','No competitor runs ML inference on-device for credit scoring. DPDP Act compliant by architecture.','#cc44ff']
+      ].map(([ico, t, v, d, c]) => `
+      <div class="card rev-card" style="border-color:${c}18">
+        <div class="rev-icon">${ico}</div>
+        <div class="rev-title" style="color:${c}">${t.toUpperCase()}</div>
+        <div class="rev-val" style="color:${c}">${v}</div>
+        <div class="rev-desc">${d}</div>
+      </div>`).join('')}
+    </div>
+    <!-- Roadmap -->
+    <div class="card" style="padding:28px">
+      <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:20px;text-align:center">ROADMAP</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+        ${[
+          ['Q1','RBI sandbox + Account Aggregator (AA) integration for real UPI data'],
+          ['Q2','Pilot with 2 NBFCs: KreditBee & BharatPe. 10K active queries/month'],
+          ['Q3','100K queries/month. Expand to farmer + SME scoring modules'],
+          ['Q4','Federated learning model improvement + Series A fundraise. SE Asia expansion']
+        ].map(([q, t]) => `
+        <div style="padding:16px;background:rgba(0,255,65,.04);border:1px solid rgba(0,255,65,.12);border-radius:2px">
+          <div style="font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;color:#00ff41;margin-bottom:7px">${q} 2025</div>
+          <div style="font-size:13px;color:rgba(200,240,212,.55);line-height:1.65">${t}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- TECH STACK -->
+  <div style="background:rgba(0,8,3,.7);border-top:1px solid rgba(0,255,65,.07);border-bottom:1px solid rgba(0,255,65,.07)">
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">TECHNICAL APPROACH</div>
+      <h2 class="section-title">The Stack Behind the Score</h2>
+    </div>
+    <div class="grid4">
+      ${[
+        ['⚙️','Backend','Flask REST API','#00ff41',['Python 3.11','Flask','Pandas','NumPy','JSON']],
+        ['🧠','ML / Model','scikit-learn RandomForest','#ffdd44',['RandomForestClassifier','50+ engineered features','Score: 300–900','Confidence output','Plain-English explain']],
+        ['🔥','On-Device AI','AMD Ryzen AI NPU','#ff5555',['AMD Ryzen AI NPU SDK','Local ML inference','< 200ms latency','Zero cloud dependency','Works offline']],
+        ['🔗','API Layer','REST API Product','#44ddff',['POST /api/score','Input: mock UPI JSON','Output: score + tier','Consent-gated','No raw data ever']],
+      ].map(([ico, layer, name, c, chips]) => `
+      <div class="card tech-card" style="border-color:${c}18">
+        <div style="font-size:24px;margin-bottom:10px">${ico}</div>
+        <div class="tech-layer" style="color:${c}">${layer.toUpperCase()}</div>
+        <div class="tech-name">${name}</div>
+        <div class="tech-chips">${chips.map(ch => `<span class="chip" style="border-color:${c}25;color:${c}70">${ch}</span>`).join('')}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  </div>
+
+  <!-- KEY FEATURES -->
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">KEY FEATURES</div>
+      <h2 class="section-title">What CreditDNA Delivers</h2>
+    </div>
+    <div class="grid2">
+      ${[
+        ['🔒','Privacy-by-Design','Raw UPI data never leaves the user device. Banks receive score only. DPDP Act and RBI compliant by architecture, not policy.','#00ff41'],
+        ['⚡','On-Device AMD AI','Full ML inference on AMD Ryzen AI NPU. Zero cloud dependency. Works offline. &lt;200ms end-to-end latency.','#ffdd44'],
+        ['📊','50+ Behavioural Signals','Transaction frequency, merchant category diversity, utility payment regularity, spending consistency, seasonal patterns — all from UPI history.','#cc44ff'],
+        ['🗣️','Plain-English Explainability','Users understand exactly why they got their score. Judges love this. Regulators require it.','#44ddff'],
+        ['🏦','Bank-Ready REST API','Simple POST /api/score integration. No partnership with GPay or PhonePe needed. Banks integrate directly.','#ff6688'],
+        ['🌏','Scalable to SE Asia','Identical model works for Philippines, Indonesia, Bangladesh — all high-mobile-payment markets with same unbanked problem.','#41ffee'],
+      ].map(([ico, t, d, c]) => `
+      <div class="card" style="padding:22px;border-color:${c}18;display:flex;gap:16px">
+        <div style="font-size:26px;flex-shrink:0;margin-top:2px">${ico}</div>
+        <div>
+          <div style="font-family:Orbitron,sans-serif;font-size:11px;font-weight:700;color:${c};margin-bottom:6px">${t}</div>
+          <div style="font-size:13px;color:rgba(200,240,212,.52);line-height:1.7">${d}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- TEAM -->
+  <div style="background:rgba(0,8,3,.7);border-top:1px solid rgba(0,255,65,.07);border-bottom:1px solid rgba(0,255,65,.07)">
+  <div class="section">
+    <div style="text-align:center;margin-bottom:44px">
+      <div class="section-label">THE TEAM</div>
+      <h2 class="section-title">BOTSQUAD</h2>
+      <p style="color:rgba(200,240,212,.35);margin-top:6px;font-size:13px">SRM Institute of Science & Technology, Chennai — HackNova 3.0</p>
+    </div>
+    <div class="grid4">
+      ${[
+        ['Simon Paul','Full Stack + Lead','⚡','#00ff41','Frontend, backend integration, 3D portfolio, hackathon veterans'],
+        ['Mayank Bansal','Data Science + Backend','🧠','#ffdd44','ML pipeline, RandomForest model, feature engineering, Flask API'],
+        ['Varsha Rani','UI/UX + Frontend','🎨','#cc44ff','Design systems, React, user experience, visual identity'],
+        ['Deva Nandha','Business Analyst','📊','#44ddff','Market research, revenue model, stakeholder mapping, pitch strategy'],
+      ].map(([n, r, i, c, desc]) => `
+      <div class="card team-card" style="border-color:${c}18">
+        <div class="team-avatar" style="background:rgba(0,20,8,.9);border:1.5px solid ${c}35;box-shadow:0 0 14px ${c}14">${i}</div>
+        <div class="team-name" style="color:${c}">${n}</div>
+        <div class="team-role" style="margin-bottom:10px">${r}</div>
+        <div style="font-size:11px;color:rgba(200,240,212,.3);line-height:1.6">${desc}</div>
+      </div>`).join('')}
+    </div>
+  </div>
+  </div>
+
+  <!-- SPONSORS / FOOTER -->
+  <div style="padding:36px 28px;text-align:center;border-top:1px solid rgba(0,255,65,.07)">
+    <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:4px;color:rgba(0,255,65,.28);margin-bottom:22px">HACKNOVA 3.0 — ORGANISED BY & SPONSORS</div>
+    <div style="display:flex;gap:18px;justify-content:center;flex-wrap:wrap;align-items:center;margin-bottom:28px">
+      ${[['SRM IST','#00ff41'],['resumerite','#9966ff'],['slidea','#ff66aa'],['MLH','#ff3333'],['Gemini','#4488ff'],['Newton School','#ffaa00']].map(([n, c]) => `
+      <div style="font-family:Orbitron,sans-serif;font-size:11px;font-weight:700;color:${c};letter-spacing:2px;padding:6px 14px;border:1px solid ${c}18;border-radius:2px;opacity:.6;transition:opacity .3s;cursor:pointer" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='.6'">${n}</div>`).join('')}
+    </div>
+  </div>
+  <footer>
+    <div class="f-brand">CREDITDNA © 2025 · BOTSQUAD · SRM IST · HACKNOVA 3.0</div>
+    <div class="f-sub">Alternative Credit Scoring for Unbanked India · AMD Slingshot 2026 Track · Built with AMD Ryzen AI NPU</div>
+  </footer>
+
+  </div>`;
+
+  startCountdown('hero-cd');
+  setTimeout(() => initThree('three-canvas'), 50);
+}
+
+/* ════════════════════════════════════════════════════════
+   ABOUT PAGE
+═══════════════════════════════════════════════════════ */
+function renderAbout() {
+  document.getElementById('app').innerHTML = `
+  <div class="page">
+  <div style="background:radial-gradient(ellipse at 50% 20%,rgba(0,255,65,.04) 0%,transparent 60%)">
+  <div class="section">
+    <div style="text-align:center;margin-bottom:50px">
+      <div class="section-label">ABOUT CREDITDNA</div>
+      <h1 class="section-title" style="margin-bottom:14px">Alternative Credit Scoring<br>for 500M Unbanked Indians</h1>
+      <p style="color:rgba(200,240,212,.5);max-width:620px;margin:0 auto;font-size:15px;line-height:1.85">CreditDNA is a privacy-first credit scoring product that builds a 300–900 credit score from UPI transaction behaviour using AMD Ryzen AI on-device processing. Banks get the score. Your data stays on your phone.</p>
+    </div>
+
+    <!-- Mission -->
+    <div class="card" style="padding:32px;margin-bottom:22px;border-color:rgba(0,255,65,.25)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px">
+        <div>
+          <div class="section-label" style="margin-bottom:12px">THE MISSION</div>
+          <p style="color:rgba(200,240,212,.6);font-size:14px;line-height:1.85">Every Indian with a UPI account should have access to formal credit. Not just salaried workers. Not just CIBIL-covered professionals. Every gig worker, every farmer, every street vendor who pays via UPI — their financial behaviour tells a story. CreditDNA reads that story and turns it into a credit score.</p>
+        </div>
+        <div>
+          <div class="section-label" style="color:#ffdd44;margin-bottom:12px">AMD SLINGSHOT 2026</div>
+          <p style="color:rgba(200,240,212,.6);font-size:14px;line-height:1.85">Submitted under the AMD Slingshot 2026 track — leveraging AMD Ryzen AI NPU for on-device ML inference. CreditDNA is the only credit scoring solution that runs the full ML pipeline locally on the device, making raw data exposure architecturally impossible.</p>
+          <div style="margin-top:14px;padding:12px 16px;background:rgba(255,221,68,.05);border:1px solid rgba(255,221,68,.2);border-radius:2px;font-family:Orbitron,sans-serif;font-size:10px;color:#ffdd44;letter-spacing:1px">LATENCY: &lt;200MS · ZERO CLOUD · WORKS OFFLINE</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Innovation deep dive -->
+    <div class="section-label" style="margin-bottom:16px">INNOVATION DEEP DIVE</div>
+    <div class="grid2" style="margin-bottom:28px">
+      ${[
+        ['Tech Innovation','On-device ML via AMD Ryzen AI NPU (latency &lt;200ms, zero cloud). No competitor in credit scoring runs full ML inference on-device. CreditVidya, the closest alternative, sends all UPI data to cloud servers.','#00ff41'],
+        ['Data Innovation','UPI behavioural signals as credit proxy — novel in India. 50+ engineered features from transaction frequency to merchant category diversity to seasonal spending patterns.','#ffdd44'],
+        ['Business Model','Pay-per-query API (₹50–200/query) creates recurring revenue without data ownership. Banks integrate once, query millions of times. We never hold user data.','#44ddff'],
+        ['Privacy Innovation','DPDP Act and RBI compliant by architecture, not policy. The system is designed so raw data transmission is physically impossible — not just prohibited by terms of service.','#cc44ff'],
+      ].map(([t, d, c]) => `
+      <div class="card" style="padding:22px;border-color:${c}18">
+        <div style="font-family:Orbitron,sans-serif;font-size:11px;font-weight:700;color:${c};margin-bottom:8px">${t}</div>
+        <div style="font-size:13px;color:rgba(200,240,212,.55);line-height:1.7">${d}</div>
+      </div>`).join('')}
+    </div>
+
+    <!-- Stretch goals -->
+    <div class="card" style="padding:26px">
+      <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:16px">STRETCH GOALS</div>
+      <div class="grid2">
+        ${[
+          ['Account Aggregator','Real UPI data integration via RBI Account Aggregator (AA) framework — post-hackathon.'],
+          ['Multi-lingual Scores','Score explanations in Hindi, Tamil, Telugu — making credit legible for all Indians.'],
+          ['Federated Learning','Model improvement across devices without centralising any user data.'],
+          ['BNPL + Insurance','Extend the scoring model to Buy Now Pay Later and micro-insurance modules.'],
+        ].map(([t, d]) => `
+        <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid rgba(0,255,65,.05)">
+          <div style="color:#00ff41;font-size:16px;flex-shrink:0">▸</div>
+          <div><div style="font-family:Orbitron,sans-serif;font-size:10px;font-weight:700;color:#c8f0d4;margin-bottom:3px">${t}</div><div style="font-size:12px;color:rgba(200,240,212,.45);line-height:1.6">${d}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+  </div>
+  <footer>
+    <div class="f-brand">CREDITDNA © 2025 · BOTSQUAD · SRM IST</div>
+    <div class="f-sub">HackNova 3.0 · AMD Slingshot 2026 Track</div>
+  </footer>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════════ */
+function renderLogin() {
+  document.getElementById('app').innerHTML = `
+  <div class="page auth-wrap">
+    <div class="auth-box">
+      <div class="auth-header">
+        <span class="section-label">PARTICIPANT LOGIN</span>
+        <h1>Welcome Back</h1>
+        <p>Login to your CreditDNA / HackNova 3.0 account</p>
+      </div>
+      <div class="card auth-card">
+        <div id="login-err"></div>
+        <div class="field"><label class="lbl">Email Address</label><input id="l-email" type="email" placeholder="you@srmist.edu.in"></div>
+        <div class="field" style="margin-bottom:24px"><label class="lbl">Password</label><input id="l-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')loginSubmit()"></div>
+        <button class="btn solid" style="width:100%;padding:13px" onclick="loginSubmit()">Login →</button>
+      </div>
+      <div style="text-align:center;margin-top:18px;font-size:14px;color:rgba(200,240,212,.4)">
+        New here? <span style="color:#00ff41;cursor:pointer;font-weight:600" onclick="goPage('register')">Create Account</span>
+      </div>
+    </div>
+  </div>`;
+}
+function loginSubmit() {
+  const e = document.getElementById('l-email').value.trim(), p = document.getElementById('l-pass').value;
+  const err = document.getElementById('login-err');
+  if (!e || !p) { err.innerHTML = `<div class="err">All fields required</div>`; return; }
+  if (!doLogin(e, p)) err.innerHTML = `<div class="err">Invalid email or password</div>`;
+}
+
+/* ════════════════════════════════════════════════════════
+   REGISTER (3-step)
+═══════════════════════════════════════════════════════ */
+let regStep = 1, regData = {};
+function renderRegister() {
+  document.getElementById('app').innerHTML = `<div class="page auth-wrap"><div style="width:100%;max-width:470px" id="reg-wrap"></div></div>`;
+  regStep = 1; regData = {}; renderRegStep();
+}
+function renderRegStep() {
+  const steps = ['Personal Info', 'Team Details', 'Track & Skills'];
+  const w = document.getElementById('reg-wrap'); if (!w) return;
+  const circles = steps.map((s, i) => `
+    <div style="display:flex;align-items:center">
+      <div class="step-circle" style="background:${i + 1 <= regStep ? '#00ff41' : 'rgba(0,255,65,.1)'};border:2px solid ${i + 1 <= regStep ? '#00ff41' : 'rgba(0,255,65,.22)'};color:${i + 1 <= regStep ? '#010a04' : 'rgba(0,255,65,.35)'};box-shadow:${i + 1 === regStep ? '0 0 14px rgba(0,255,65,.5)' : 'none'}">${i + 1}</div>
+      ${i < 2 ? `<div class="step-bar" style="background:${i + 1 < regStep ? '#00ff41' : 'rgba(0,255,65,.15)'}"></div>` : ''}
+    </div>`).join('');
+  let fh = '';
+  if (regStep === 1) fh = `
+    <div class="field"><label class="lbl">Full Name *</label><input id="r-name" value="${regData.name || ''}" placeholder="e.g. Simon Paul"></div>
+    <div class="field"><label class="lbl">Email *</label><input id="r-email" type="email" value="${regData.email || ''}" placeholder="you@srmist.edu.in"></div>
+    <div class="field"><label class="lbl">Password *</label><input id="r-pass" type="password" value="${regData.password || ''}" placeholder="Min 6 characters"></div>
+    <div class="field" style="margin-bottom:0"><label class="lbl">Confirm Password *</label><input id="r-conf" type="password" value="${regData.confirm || ''}" placeholder="Repeat password"></div>`;
+  else if (regStep === 2) fh = `
+    <div class="field"><label class="lbl">Team Name *</label><input id="r-team" value="${regData.teamName || ''}" placeholder="e.g. BOTSQUAD"></div>
+    <div class="field"><label class="lbl">College / Organization *</label><input id="r-college" value="${regData.college || ''}" placeholder="e.g. SRM IST Chennai"></div>
+    <div class="field"><label class="lbl">Phone (Optional)</label><input id="r-phone" type="tel" value="${regData.phone || ''}" placeholder="+91 00000 00000"></div>
+    <div class="field" style="margin-bottom:0"><label class="lbl">Team Size</label><select id="r-size"><option value="1">1 — Solo</option><option value="2">2 members</option><option value="3">3 members</option><option value="4" selected>4 members</option></select></div>`;
+  else fh = `
+    <div class="field"><label class="lbl">Hackathon Track *</label><select id="r-track"><option value="">Select a track...</option>${TRACKS.map(t => `<option value="${t.n}" ${regData.track === t.n ? 'selected' : ''}>${t.i} ${t.n}</option>`).join('')}</select></div>
+    <div class="field"><label class="lbl">Experience Level</label><select id="r-exp"><option value="beginner">Beginner (First hackathon)</option><option value="intermediate">Intermediate (1–3 hackathons)</option><option value="advanced">Advanced (4+ hackathons)</option></select></div>
+    <div style="background:rgba(0,255,65,.04);border:1px solid rgba(0,255,65,.12);border-radius:3px;padding:12px;font-size:12px;color:rgba(200,240,212,.42);line-height:1.7">✓ By registering you agree to the MLH Code of Conduct and HackNova 3.0 rules.</div>`;
+
+  w.innerHTML = `
+  <div style="animation:fadeInUp .35s ease">
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:4px;color:#00ff41;margin-bottom:8px">CREATE ACCOUNT</div>
+      <h1 style="font-family:Orbitron,sans-serif;font-size:26px;font-weight:900;color:#c8f0d4">Join HackNova 3.0</h1>
+    </div>
+    <div class="step-circles">${circles}</div>
+    <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:rgba(0,255,65,.42);text-align:center;margin:8px 0 20px">STEP ${regStep}/3 — ${steps[regStep - 1].toUpperCase()}</div>
+    <div class="card auth-card">
+      <div id="reg-err"></div>
+      ${fh}
+      <div style="display:flex;gap:10px;margin-top:22px">
+        ${regStep > 1 ? `<button class="btn" style="flex:1;padding:12px" onclick="regBack()">← Back</button>` : ''}
+        <button class="btn solid" style="flex:2;padding:12px" onclick="regNext()">${regStep < 3 ? 'Next →' : 'Complete Registration →'}</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:13px;color:rgba(200,240,212,.38)">
+      Already registered? <span style="color:#00ff41;cursor:pointer" onclick="goPage('login')">Login here</span>
+    </div>
+  </div>`;
+}
+function regBack() { regStep--; renderRegStep(); }
+function regNext() {
+  const e = document.getElementById('reg-err');
+  if (regStep === 1) {
+    const n = document.getElementById('r-name').value.trim(), em = document.getElementById('r-email').value.trim(), p = document.getElementById('r-pass').value, c = document.getElementById('r-conf').value;
+    if (!n || !em || !p || !c) { e.innerHTML = `<div class="err">All fields required</div>`; return; }
+    if (p.length < 6) { e.innerHTML = `<div class="err">Password min 6 characters</div>`; return; }
+    if (p !== c) { e.innerHTML = `<div class="err">Passwords don't match</div>`; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { e.innerHTML = `<div class="err">Invalid email</div>`; return; }
+    Object.assign(regData, { name: n, email: em, password: p, confirm: c }); regStep++; renderRegStep();
+  } else if (regStep === 2) {
+    const t = document.getElementById('r-team').value.trim(), co = document.getElementById('r-college').value.trim();
+    if (!t || !co) { e.innerHTML = `<div class="err">Team name and college required</div>`; return; }
+    Object.assign(regData, { teamName: t, college: co, phone: document.getElementById('r-phone').value.trim(), teamSize: document.getElementById('r-size').value });
+    regStep++; renderRegStep();
+  } else {
+    const tr = document.getElementById('r-track').value;
+    if (!tr) { e.innerHTML = `<div class="err">Please select a track</div>`; return; }
+    Object.assign(regData, { track: tr, experience: document.getElementById('r-exp').value });
+    doRegister(regData);
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════ */
+function renderDashboard() {
+  const u = USER, subs = DB.subs().filter(s => s.userId === u.id), hasSub = subs.length > 0, sub = hasSub ? subs[0] : null;
+  const sc = (ico, lbl, val, c) => `<div class="card stat-card" style="border-color:${c}16"><div class="sc-icon">${ico}</div><div class="sc-lbl" style="color:${c}">${lbl}</div><div class="sc-val">${val}</div></div>`;
+  document.getElementById('app').innerHTML = `
+  <div class="page db-wrap">
+    <div class="db-header">
+      <div>
+        <div class="section-label" style="margin-bottom:7px">PARTICIPANT DASHBOARD</div>
+        <div class="db-title">Welcome, ${u.name.split(' ')[0]} 🧬</div>
+        <div class="db-sub">Team: <strong style="color:#c8f0d4">${u.teamName}</strong> · ${u.college} · ${u.track || 'FinTech Track'}</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn solid" onclick="goPage('submit')">${hasSub ? 'Update' : 'Submit'} Project</button>
+        <button class="btn" onclick="goPage('about')">About CreditDNA</button>
+      </div>
+    </div>
+    <div class="stat-cards">
+      ${sc('✅', 'Status', 'Active', '#00ff41')}
+      ${sc('🎯', 'Track', (u.track || 'FinTech').split(' ')[0], '#ffdd44')}
+      ${sc('👥', 'Team Size', `${u.teamSize || 1} member${u.teamSize > 1 ? 's' : ''}`, '#44ddff')}
+      ${sc(hasSub ? '📦' : '⏳', 'Submission', hasSub ? 'Submitted ✓' : 'Pending', hasSub ? '#00ff41' : '#ffcc44')}
+    </div>
+    <div class="db-grid">
+      <div>
+        <div class="card" style="padding:26px;margin-bottom:18px">
+          <div style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:3px;color:#00ff41;margin-bottom:16px">PROJECT SUBMISSION</div>
+          ${hasSub ? `
+          <div style="background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.18);border-radius:3px;padding:14px 18px;margin-bottom:14px">
+            <div style="font-family:Orbitron,sans-serif;font-size:14px;font-weight:700;color:#00ff41;margin-bottom:3px">${sub.projectTitle || 'CreditDNA'}</div>
+            <div style="font-size:12px;color:rgba(200,240,212,.5)">${sub.track || 'FinTech'} · Submitted ${new Date(sub.at).toLocaleDateString()}</div>
+          </div>
+          <button class="btn" style="width:100%" onclick="goPage('submit')">Edit Submission →</button>
+          ` : `
+          <div style="text-align:center;padding:34px 20px;border:2px dashed rgba(0,255,65,.1);border-radius:3px;margin-bottom:16px">
+            <div style="font-size:36px;margin-bottom:10px">📋</div>
+            <div style="font-family:Orbitron,sans-serif;font-size:11px;color:rgba(0,255,65,.48);margin-bottom:5px">NO SUBMISSION YET</div>
+            <div style="font-size:12px;color:rgba(200,240,212,.3)">Submit CreditDNA before the deadline!</div>
+          </div>
+          <button class="btn solid" style="width:100%" onclick="goPage('submit')">Start Submission →</button>`}
+        </div>
+        <div class="card" style="padding:26px">
+          <div style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:3px;color:#00ff41;margin-bottom:16px">QUICK LINKS</div>
+          <div class="grid2">
+            ${[['📜', 'MLH Code of Conduct'], ['🔗', 'Devpost Page'], ['💬', 'Discord Server'], ['🏆', 'AMD Slingshot Track'], ['📋', 'Judging Criteria'], ['🧬', 'CreditDNA Repo']].map(([i, l]) => `
+            <div style="display:flex;align-items:center;gap:8px;padding:11px 12px;background:rgba(0,255,65,.03);border:1px solid rgba(0,255,65,.1);border-radius:3px;font-size:12px;color:rgba(200,240,212,.6);cursor:pointer;transition:all .3s" onmouseover="this.style.borderColor='rgba(0,255,65,.3)'" onmouseout="this.style.borderColor='rgba(0,255,65,.1)'">${i} ${l}</div>`).join('')}
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="padding:22px;margin-bottom:18px;animation:pulse 3s infinite">
+          <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:14px">EVENT COUNTDOWN</div>
+          <div id="db-cd"></div>
+        </div>
+        <div class="card" style="padding:22px;margin-bottom:18px">
+          <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:14px">ANNOUNCEMENTS</div>
+          ${[['44ddff', 'Gemini API credits live — claim yours', '2h ago'], ['ffdd44', 'AMD Ryzen AI workshop @ 3PM Hall C', '4h ago'], ['00ff41', 'All teams check-in by 9AM April 19', '1d ago'], ['cc44ff', 'Mentor office hours every 2h Room B', '1d ago']].map(([c, t, time], i, a) => `
+          <div class="announce-item" style="${i < a.length - 1 ? 'border-bottom:1px solid rgba(0,255,65,.05)' : ''}">
+            <div class="announce-dot" style="background:#${c};box-shadow:0 0 5px #${c}"></div>
+            <div><div class="announce-title">${t}</div><div class="announce-time">${time}</div></div>
+          </div>`).join('')}
+        </div>
+        <div class="card" style="padding:22px">
+          <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:3px;color:#00ff41;margin-bottom:14px">YOUR PROFILE</div>
+          ${[['Name', u.name], ['Email', u.email], ['Team', u.teamName], ['College', u.college], ['Track', (u.track || 'FinTech').split(' ')[0]], ['Hacker ID', '#' + String(u.id).slice(-6)]].map(([k, v]) => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,255,65,.04);font-size:12px">
+            <span style="color:rgba(200,240,212,.36);font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:1px;padding-top:2px">${k.toUpperCase()}</span>
+            <span style="color:#c8f0d4;text-align:right;max-width:58%;word-break:break-all">${v}</span>
+          </div>`).join('')}
+          <button class="btn sm" style="width:100%;margin-top:12px" onclick="goPage('profile')">View Full Profile →</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  startCountdown('db-cd');
+}
+
+/* ════════════════════════════════════════════════════════
+   SUBMIT (9-step)
+═══════════════════════════════════════════════════════ */
+let subStep = 0, subForm = {};
+const SUB_STEPS = [
+  { t: 'Project Title', s: 'Cover Slide' }, { t: 'Problem Statement', s: 'The problem to solve' },
+  { t: 'Idea & Solution', s: 'Your approach' }, { t: 'Target Users', s: 'Who benefits' },
+  { t: 'Technical Approach', s: 'Stack & tools' }, { t: 'System Architecture', s: 'Component flow' },
+  { t: 'Features & Feasibility', s: 'What you built' }, { t: 'Innovation & Impact', s: 'Why it matters' },
+  { t: 'Links & Submit', s: 'Final submission' }
+];
+
+function renderSubmit() {
+  const u = USER, ex = DB.subs().find(s => s.userId === u.id) || {};
+  subForm = {
+    projectTitle: ex.projectTitle || 'CreditDNA', teamName: ex.teamName || u.teamName || 'BOTSQUAD',
+    track: ex.track || 'FinTech / Financial Inclusion — AMD Slingshot 2026',
+    problem: ex.problem || '500M Indians have no credit history — not because they are poor, but because banks have no data on them.',
+    whyImportant: ex.whyImportant || '40% of loan applications are rejected due to lack of credit data. $4B market growing at 25% YoY — completely underserved.',
+    dataPoint: ex.dataPoint || 'CIBIL only covers salaried formal-sector workers. 500M UPI-active Indians generate rich financial behaviour data that goes entirely unused.',
+    ideaTitle: ex.ideaTitle || 'CreditDNA — Alternative Credit Scoring for Unbanked India',
+    valueProp: ex.valueProp || 'We build a credit score for unbanked Indians using their UPI transaction behaviour — so banks can confidently lend to 500M people who were previously invisible.',
+    corePillars: ex.corePillars || 'Analyse: 50+ behavioural signals from UPI history processed on-device via AMD Ryzen AI NPU\nScore: RandomForest ML generates 300–900 credit score with plain-English explanation. Privacy-first.\nShare: Banks call the CreditDNA API with user consent and receive score + confidence level only.',
+    primaryUsers: ex.primaryUsers || 'Unbanked individuals — gig workers (Zomato/Swiggy delivery partners), farmers, students, daily wage earners, micro-entrepreneurs who use UPI regularly but have no CIBIL score.',
+    useCase: ex.useCase || 'Ravi, a 28-year-old Swiggy delivery partner in Chennai, earns ₹25,000/month via UPI. CIBIL score: zero. With CreditDNA, his UPI history is analysed on his phone. He gets a score of 718 (GOOD) and is eligible for a ₹75,000 loan via KreditBee — all in under 2 minutes.',
+    outcome: ex.outcome || 'Ravi accesses formal credit for the first time. The bank reduces default risk with data-backed lending decisions. CreditDNA earns ₹100 per API query. Everyone wins.',
+    stack: ex.stack || 'Backend (Flask REST API), ML (Python scikit-learn), On-device inference (AMD Ryzen AI NPU SDK). No frontend required — pure API product.',
+    technologies: ex.technologies || 'Python, Flask, scikit-learn (RandomForestClassifier), AMD Ryzen AI NPU SDK, Pandas, NumPy, JSON. No cloud dependency — fully local inference.',
+    algorithms: ex.algorithms || 'RandomForest trained on 50+ engineered features — transaction frequency, merchant category diversity, utility payment regularity, spend consistency, seasonal behaviour patterns. Output: score (300-900) + confidence score + top contributing factors.',
+    apis: ex.apis || 'CreditDNA exposes a REST API (POST /api/score). Input: mock UPI transaction JSON. Output: credit score + tier + explanation. No third-party data sources needed.',
+    architectureDesc: ex.architectureDesc || 'User Device (UPI History) → AMD Ryzen AI NPU (On-device Feature Extraction + ML Inference) → CreditDNA Score Engine → Flask REST API → Bank/NBFC\n\nStep 1 - Collect: User consents; mock UPI transaction history loaded on-device. Raw data never leaves phone.\nStep 2 - Compute: AMD Ryzen AI NPU runs feature engineering — 50+ signals extracted locally.\nStep 3 - Score: RandomForest model generates credit score 300-900 + confidence + plain-English explanation.\nStep 4 - API: Bank calls POST /api/score with consent token. Receives score + tier + factors only.',
+    features: ex.features || '1. On-device ML scoring — full inference on AMD Ryzen AI NPU, zero cloud dependency.\n2. Privacy-by-design — raw UPI data never leaves user device; banks receive score only.\n3. 50+ behavioural signals — UPI frequency, merchant diversity, utility payment history, seasonal patterns.\n4. Plain-English explainability — users understand exactly why they got their score.\n5. Bank-ready API — simple REST integration, no GPay/PhonePe partnership needed.',
+    stretchGoals: ex.stretchGoals || 'Real UPI data integration via Account Aggregator (AA) framework. Multi-lingual score explanations (Hindi, Tamil, Telugu). Federated learning across devices. BNPL and micro-insurance scoring modules.',
+    innovation: ex.innovation || 'CreditDNA is the only solution combining: alternative credit scoring + on-device privacy via AMD Ryzen AI NPU + no raw data leaves phone + works offline. CIBIL only covers formal salaried workers. CreditVidya sends ALL your UPI data to cloud. We do not.',
+    impact: ex.impact || '500M addressable unbanked Indians gain access to formal credit. ₹4B market, 25% YoY growth. Replicable to SE Asia (Philippines, Indonesia, Bangladesh). Enables micro-loans, BNPL, insurance for the previously invisible.',
+    repoLink: ex.repoLink || 'https://github.com/SimonPaul-0/creditdna',
+    demoLink: ex.demoLink || ''
+  };
+  subStep = 0; renderSubStep();
+}
+
+function renderSubStep() {
+  const prog = SUB_STEPS.map((_, i) => `<div class="sub-progress-seg" style="background:${i <= subStep ? '#00ff41' : 'rgba(0,255,65,.12)'};box-shadow:${i === subStep ? '0 0 8px rgba(0,255,65,.6)' : 'none'}" onclick="subJump(${i})"></div>`).join('');
+  const f = (id, lbl, ph, rows = 0, type = 'text') => {
+    const v = (subForm[id] || '').toString().replace(/</g, '&lt;').replace(/"/g, '&quot;');
+    if (rows > 0) return `<div class="field"><label class="lbl">${lbl}</label><textarea id="sf-${id}" style="min-height:${rows * 38}px;resize:vertical" placeholder="${ph}">${(subForm[id] || '').toString().replace(/</g,'&lt;')}</textarea></div>`;
+    return `<div class="field"><label class="lbl">${lbl}</label><input id="sf-${id}" type="${type}" value="${v}" placeholder="${ph}"></div>`;
+  };
+  const sel = (id, lbl) => `<div class="field"><label class="lbl">${lbl}</label><select id="sf-${id}"><option value="">Select...</option>${TRACKS.map(t => `<option value="${t.n}" ${subForm[id] === t.n ? 'selected' : ''}>${t.i} ${t.n}</option>`).join('')}</select></div>`;
+  let fh = '';
+  if (subStep === 0) fh = f('projectTitle', 'Project Title *', 'e.g. CreditDNA') + f('teamName', 'Team Name', 'e.g. BOTSQUAD') + sel('track', 'Hackathon Track');
+  else if (subStep === 1) fh = f('problem', 'Problem Headline *', '500M Indians invisible to banks...') + f('whyImportant', 'Why Important?', 'Urgency, scale, pain point...', 3) + f('dataPoint', 'Data Point (optional)', '$4B market, 40% rejections...');
+  else if (subStep === 2) fh = f('ideaTitle', 'Product Name *', 'CreditDNA') + f('valueProp', 'One-line Value Prop', 'We do X for Y so they can Z') + f('corePillars', 'Core Pillars (2–3)', 'Analyse, Score, Share...', 3);
+  else if (subStep === 3) fh = f('primaryUsers', 'Primary Users *', 'Gig workers, farmers, students...') + f('useCase', 'Real-life Scenario', 'How Ravi uses CreditDNA...', 3) + f('outcome', 'Outcome', 'What improves for the user?');
+  else if (subStep === 4) fh = f('stack', 'Stack *', 'Flask + scikit-learn + AMD Ryzen AI NPU') + f('technologies', 'Technologies', 'Python, Pandas, NumPy, AMD NPU SDK...') + f('algorithms', 'Algorithm / Model', 'RandomForest, 50+ engineered features...') + f('apis', 'APIs / Services', 'POST /api/score REST API...');
+  else if (subStep === 5) fh = f('architectureDesc', 'Architecture Description *', 'UPI History → AMD NPU → Score Engine → Flask API → Bank...', 5) + `<div style="background:rgba(0,255,65,.04);border:1px solid rgba(0,255,65,.1);border-radius:3px;padding:12px;font-size:12px;color:rgba(200,240,212,.4);line-height:1.7">💡 Describe the 4-step flow: Collect → Compute → Score → API</div>`;
+  else if (subStep === 6) fh = f('features', 'Key Features (3–5) *', 'On-device ML scoring\nPrivacy-by-design\n50+ signals\nExplainability\nBank-ready API', 5) + f('stretchGoals', 'Stretch Goals', 'Account Aggregator, multilingual, federated learning...', 2);
+  else if (subStep === 7) fh = f('innovation', 'What Makes This Unique? *', 'vs CIBIL, CreditVidya — on-device AMD NPU, UPI as credit proxy...', 3) + f('impact', 'Long-term Impact', '500M Indians, SE Asia expansion, ₹4B market...', 3);
+  else fh = f('repoLink', 'GitHub Repository', 'https://github.com/SimonPaul-0/creditdna', 0, 'url') + f('demoLink', 'Demo / Live URL', 'https://creditdna.vercel.app', 0, 'url') + `
+    <div style="background:rgba(0,255,65,.05);border:1px solid rgba(0,255,65,.2);border-radius:3px;padding:18px">
+      <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;margin-bottom:12px">SUBMISSION SUMMARY</div>
+      ${[['Project', subForm.projectTitle || 'CreditDNA'], ['Team', subForm.teamName], ['Track', (subForm.track || '').split(' ')[0] || 'FinTech'], ['Problem', (subForm.problem || 'Not set').slice(0, 55) + '...'], ['Stack', subForm.stack || 'Not set']].map(([k, v]) => `
+      <div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid rgba(0,255,65,.05);font-size:12px">
+        <span style="color:rgba(0,255,65,.5);font-family:Orbitron,sans-serif;font-size:8px;letter-spacing:1px;min-width:58px;padding-top:2px">${k.toUpperCase()}</span>
+        <span style="color:#c8f0d4">${v}</span>
+      </div>`).join('')}
+    </div>`;
+
+  document.getElementById('app').innerHTML = `
+  <div class="page sub-wrap">
+    <div style="text-align:center;margin-bottom:24px">
+      <div class="section-label" style="margin-bottom:7px">PROJECT SUBMISSION</div>
+      <h1 style="font-family:Orbitron,sans-serif;font-size:24px;font-weight:900;color:#c8f0d4">${SUB_STEPS[subStep].t}</h1>
+      <p style="color:rgba(200,240,212,.32);font-size:12px;margin-top:4px">${SUB_STEPS[subStep].s}</p>
+    </div>
+    <div style="margin-bottom:22px">
+      <div class="sub-progress-bar">${prog}</div>
+      <div style="text-align:right;font-family:Orbitron,sans-serif;font-size:9px;color:rgba(0,255,65,.32);letter-spacing:2px">${subStep + 1} / ${SUB_STEPS.length}</div>
+    </div>
+    <div class="card" style="padding:32px;margin-bottom:18px">${fh}</div>
+    <div style="display:flex;gap:10px">
+      ${subStep > 0 ? `<button class="btn" style="flex:1;padding:12px" onclick="subBack()">← Previous</button>` : ''}
+      ${subStep < SUB_STEPS.length - 1
+        ? `<button class="btn solid" style="flex:2;padding:12px" onclick="subNext()">Next: ${SUB_STEPS[subStep + 1].t} →</button>`
+        : `<button class="btn solid" style="flex:2;padding:12px" onclick="subSubmit()">🚀 Submit CreditDNA</button>`}
+    </div>
+  </div>`;
+}
+
+function subCollect() {
+  const fields = { 0: ['projectTitle', 'teamName', 'track'], 1: ['problem', 'whyImportant', 'dataPoint'], 2: ['ideaTitle', 'valueProp', 'corePillars'], 3: ['primaryUsers', 'useCase', 'outcome'], 4: ['stack', 'technologies', 'algorithms', 'apis'], 5: ['architectureDesc'], 6: ['features', 'stretchGoals'], 7: ['innovation', 'impact'], 8: ['repoLink', 'demoLink'] };
+  (fields[subStep] || []).forEach(id => { const el = document.getElementById('sf-' + id); if (el) subForm[id] = el.value; });
+}
+function subJump(i) { subCollect(); subStep = i; renderSubStep(); }
+function subBack() { subCollect(); subStep--; renderSubStep(); }
+function subNext() { subCollect(); if (subStep === 0 && !subForm.projectTitle) { toast('Project title required', 'error'); return; } subStep++; renderSubStep(); }
+function subSubmit() {
+  subCollect();
+  if (!subForm.projectTitle) { toast('Project title required', 'error'); subStep = 0; renderSubStep(); return; }
+  const subs = DB.subs().filter(s => s.userId !== USER.id);
+  subs.push({ ...subForm, userId: USER.id, userName: USER.name, at: new Date().toISOString() });
+  DB.saveSubs(subs); toast('CreditDNA submitted successfully! 🚀'); goPage('dashboard');
+}
+
+/* ════════════════════════════════════════════════════════
+   PROFILE
+═══════════════════════════════════════════════════════ */
+function renderProfile() {
+  const u = USER;
+  document.getElementById('app').innerHTML = `
+  <div class="page profile-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px;flex-wrap:wrap;gap:14px">
+      <div>
+        <div class="section-label" style="margin-bottom:7px">YOUR PROFILE</div>
+        <h1 style="font-family:Orbitron,sans-serif;font-size:26px;font-weight:900;color:#c8f0d4">${u.name}</h1>
+      </div>
+      <button onclick="doLogout()" style="font-family:Orbitron,sans-serif;font-size:10px;letter-spacing:1.5px;border:1.5px solid rgba(255,68,68,.45);color:#ff7777;padding:9px 20px;cursor:pointer;background:transparent;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .3s">Logout</button>
+    </div>
+    <div class="card" style="padding:26px;margin-bottom:20px;display:flex;gap:22px;align-items:center">
+      <div style="width:72px;height:72px;border-radius:3px;background:rgba(0,255,65,.1);border:2px solid rgba(0,255,65,.3);display:flex;align-items:center;justify-content:center;animation:pulse 2.5s infinite;flex-shrink:0">
+        <span style="font-family:Orbitron,sans-serif;font-size:28px;font-weight:900;color:#00ff41">${u.name[0].toUpperCase()}</span>
+      </div>
+      <div>
+        <div style="font-family:Orbitron,sans-serif;font-size:16px;font-weight:900;color:#c8f0d4;margin-bottom:4px">${u.name}</div>
+        <div style="font-size:13px;color:rgba(200,240,212,.4);margin-bottom:8px">${u.email}</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,255,65,.07);border:1px solid rgba(0,255,65,.2);border-radius:100px;padding:4px 12px;font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:1.5px;color:#00ff41">
+          <span style="width:5px;height:5px;border-radius:50%;background:#00ff41;box-shadow:0 0 6px #00ff41;display:inline-block"></span>
+          REGISTERED HACKER
+        </div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:18px">
+      <div class="card" style="padding:22px">
+        <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;margin-bottom:14px">TEAM INFO</div>
+        ${[['Team', u.teamName], ['College', u.college], ['Team Size', `${u.teamSize || 1} member(s)`], ['Track', (u.track || 'FinTech').split(' ')[0]]].map(([k, v]) => `
+        <div style="padding:7px 0;border-bottom:1px solid rgba(0,255,65,.04);display:flex;justify-content:space-between;font-size:12px;gap:8px">
+          <span style="color:rgba(200,240,212,.36)">${k}</span><span style="color:#c8f0d4;text-align:right">${v}</span>
+        </div>`).join('')}
+      </div>
+      <div class="card" style="padding:22px">
+        <div style="font-family:Orbitron,sans-serif;font-size:9px;letter-spacing:2px;color:#00ff41;margin-bottom:14px">HACKER DETAILS</div>
+        ${[['Level', u.experience || 'Beginner'], ['Phone', u.phone || '—'], ['Joined', new Date(u.joined).toLocaleDateString()], ['Hacker ID', '#' + String(u.id).slice(-6)]].map(([k, v]) => `
+        <div style="padding:7px 0;border-bottom:1px solid rgba(0,255,65,.04);display:flex;justify-content:space-between;font-size:12px;gap:8px">
+          <span style="color:rgba(200,240,212,.36)">${k}</span><span style="color:#c8f0d4;text-align:right">${v}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div style="display:flex;gap:12px">
+      <button class="btn solid" style="flex:1" onclick="goPage('submit')">Submit Project</button>
+      <button class="btn" style="flex:1" onclick="goPage('dashboard')">Dashboard</button>
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════════
+   MAIN RENDER
+═══════════════════════════════════════════════════════ */
+function render() {
+  if (THREE_CLEANUP) { THREE_CLEANUP(); THREE_CLEANUP = null; }
+  clearInterval(CD_INTERVAL);
+  const pages = { landing: renderLanding, about: renderAbout, login: renderLogin, register: renderRegister, dashboard: renderDashboard, submit: renderSubmit, profile: renderProfile };
+  (pages[PAGE] || renderLanding)();
+}
+
+/* ════════════════════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════════════════ */
+renderNav();
+render();
+</script>
+</body>
+</html>
