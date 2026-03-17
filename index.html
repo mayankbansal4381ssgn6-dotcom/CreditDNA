@@ -1830,8 +1830,8 @@ function renderPricing(go) {
     </div>
 
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;margin-bottom:56px;">
-      ${[['Starter','₹2','per API call','Up to 5,000/month','#8c7d6a',['Full score + tier','Top 3 factors','99.5% uptime SLA','Email support'],false],
-         ['Growth','₹1.50','per API call','5K–50K/month','#d4500f',['Everything in Starter','Webhook callbacks','Analytics dashboard','Priority support'],true],
+      ${[['Starter','₹20','per API call','Up to 5,000/month','#8c7d6a',['Full score + tier','Top 3 factors','99.5% uptime SLA','Email support'],false],
+         ['Growth','₹30','per API call','5K–50K/month','#d4500f',['Everything in Starter','Webhook callbacks','Analytics dashboard','Priority support'],true],
          ['Enterprise','Custom','pricing','100K+/month','#0f7e5a',['Everything in Growth','Custom SLA agreement','White-label option','AA framework integration','On-premise deployment','Direct team access'],false],
         ].map(([name,price,unit,vol,c,features,popular]) => `
       <div class="cdna-card ${popular?'plan-popular':''}" style="padding:32px;border-top:3px solid ${c};${popular?'transform:scale(1.02);':''}">
