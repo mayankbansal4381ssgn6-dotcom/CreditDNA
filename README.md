@@ -3,7 +3,7 @@
 
 **Team:** BOTSQUAD  
 **Institution:** SRM Institute of Science & Technology, Chennai  
-**Stack:** HTML · CSS · JavaScript · Three.js · localStorage
+**Stack:** HTML · CSS (Tailwind) · JavaScript (ES Modules) · JSDoc TypeScript · Three.js · localStorage
 
 ---
 
@@ -20,21 +20,52 @@ CreditDNA builds a **300–900 credit score** for unbanked Indians using their U
 ## Live Demo
 
 > Deploy to Vercel and open on any device — phone, tablet, or desktop.
+> Admin portal available at `/admin`
 
 ---
 
 ## Pages
 
-| Page | URL (client-side) | Description |
+| Page | URL | Description |
 |---|---|---|
-| Home | `/` | Landing page with DNA 3D animation, problem, how it works, Ravi demo, features, team |
-| How It Works | `/how` | Full methodology — consent → feature engineering → ML scoring → bank API |
-| For Banks | `/pricing` | API pricing tiers for lenders (Starter / Growth / Enterprise) |
-| Register | `/register` | 3-step signup: personal info → occupation → UPI consent |
-| Login | `/login` | Email + password authentication |
-| Dashboard | `/dashboard` | Score overview, factor breakdown, improvement tips |
-| Check Score | `/check` | 5-question UPI behaviour simulator that generates and saves your score |
-| Profile | `/profile` | Account details, privacy info |
+| Home | `/#landing` | Landing page with DNA 3D animation, problem, how it works, Ravi demo, features |
+| How It Works | `/#how` | Full methodology — consent → feature engineering → ML scoring → bank API |
+| For Banks | `/#pricing` | API pricing tiers for lenders (Starter / Growth / Enterprise) |
+| Register | `/#register` | 3-step signup: personal info → occupation → UPI consent |
+| Login | `/#login` | Email + password authentication |
+| Dashboard | `/#dashboard` | Score overview, animated arc, factor breakdown, improvement tips |
+| Check Score | `/#check` | 5-question UPI behaviour simulator with animated score reveal |
+| Transactions | `/#transactions` | Mock UPI transaction list with summary stats |
+| Profile | `/#profile` | Account details, privacy info, delete account |
+| **Admin Portal** | `/admin.html` | Separate dark-themed admin dashboard (restricted access) |
+
+---
+
+## Admin Portal
+
+The admin portal (`admin.html`) is a **completely separate page** with its own login gate.
+
+### Access Requirements
+All three must match to gain access:
+1. **Email** — must be on the admin whitelist in `js/config.js`
+2. **Password** — the account password set during registration
+3. **Admin Key** — `CDNA2025` (shared with team leads only)
+
+### Admin Features
+- **Overview tab** — occupation breakdown, score distribution charts, recent signups
+- **Users tab** — full user table, delete users, export CSV
+- **Scores tab** — score analytics, ranked leaderboard
+- **Settings tab** — admin whitelist view, DB stats, clear all data
+
+### Admin Emails (whitelist)
+```
+simon@creditdna.in
+mayank@creditdna.in
+varsha@creditdna.in
+deva@creditdna.in
+admin@creditdna.in
+```
+> To add a new admin, edit `ADMIN_EMAILS` in `js/config.js`
 
 ---
 
@@ -42,11 +73,14 @@ CreditDNA builds a **300–900 credit score** for unbanked Indians using their U
 
 - **Privacy by architecture** — raw UPI data never leaves the device
 - **On-device ML scoring** — 50+ behavioural signals processed locally
+- **Three.js DNA helix** — interactive 3D double helix with mouse parallax (desktop only)
 - **Plain-English explanations** — users know exactly why they got their score
+- **Animated score arc** — SVG arc + count-up animation on score reveal
 - **Bank-ready REST API** — `POST /api/score` returns score + tier + factors
 - **Score simulator** — working 5-question demo that calculates a real 300–900 score
 - **Full auth flow** — register, login, logout, persistent sessions via localStorage
-- **Improvement tips** — personalised advice based on your score tier
+- **Improvement tips** — personalised advice based on score tier
+- **Separate admin portal** — dark-themed, triple-gated, with user management + CSV export
 
 ---
 
@@ -54,13 +88,44 @@ CreditDNA builds a **300–900 credit score** for unbanked Indians using their U
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML5 + CSS3 + JavaScript (ES6+) |
-| 3D Animation | Three.js r128 (CDN) — DNA double helix |
-| Typography | Orbitron + Rajdhani (Google Fonts CDN) |
+| Frontend | Vanilla HTML5 + Tailwind CSS (Play CDN) + JavaScript ES Modules |
+| Type Safety | JSDoc `@typedef` / `@param` / `@returns` (zero build step) |
+| 3D Animation | Three.js r128 (CDN) — DNA double helix with particles + mouse parallax |
+| Typography | Bricolage Grotesque + Plus Jakarta Sans (Google Fonts CDN) |
+| Admin Typography | + JetBrains Mono for terminal aesthetic |
 | Auth & Storage | Browser localStorage (no backend needed) |
-| Deployment | Vercel (static) |
+| Deployment | Vercel (static, multi-page) |
 
-> **Zero dependencies.** No npm, no build step, no node_modules. One HTML file.
+> **Zero build step.** No npm, no webpack, no node_modules. Just files.
+
+---
+
+## File Structure
+
+```
+creditdna/
+├── index.html              ← Main app shell (nav, toast, app root)
+├── admin.html              ← Admin portal shell (separate dark page)
+├── vercel.json             ← Vercel multi-page routing config
+├── README.md               ← This file
+│
+├── css/
+│   └── styles.css          ← Custom CSS (animations, cards, forms, layout)
+│
+└── js/
+    ├── app.js              ← Client-side router + boot
+    ├── config.js           ← Constants, score helpers, mock data (JSDoc typed)
+    ├── db.js               ← localStorage DB layer (typed)
+    ├── auth.js             ← Login / register / logout logic
+    ├── nav.js              ← Nav bar + mobile menu renderer
+    ├── toast.js            ← Toast notification system
+    ├── three-dna.js        ← Three.js DNA double helix 3D model
+    └── pages/
+        ├── landing.js      ← Landing page (boots Three.js on desktop)
+        ├── auth.js         ← Login form + 3-step register wizard
+        └── pages.js        ← Dashboard, Check Score, Transactions,
+                              Profile, How It Works, Pricing
+```
 
 ---
 
@@ -68,37 +133,38 @@ CreditDNA builds a **300–900 credit score** for unbanked Indians using their U
 
 | Device | Support |
 |---|---|
-| Desktop (Windows / Mac / Linux) | ✅ Full — Three.js animation, hover effects |
+| Desktop (Windows / Mac / Linux) | ✅ Full — Three.js DNA animation, hover effects |
 | iPhone (iOS Safari / Chrome) | ✅ Full — hamburger nav, safe area support, no zoom on inputs |
 | Android (Chrome / Samsung Browser) | ✅ Full — touch gestures, hamburger nav |
 | iPad / tablet | ✅ Full — adaptive layout |
 
 **Mobile-specific optimisations:**
-- Three.js skipped on phones (saves battery + avoids lag)
+- Three.js skipped on phones (saves battery, avoids lag)
 - Hamburger menu with slide-down animation
 - `env(safe-area-inset-*)` for iPhone notch / Dynamic Island
 - `min-height: 44px` on all tap targets (Apple guidelines)
 - `font-size: max(16px)` on inputs — prevents iOS auto-zoom
 - `viewport-fit=cover` for edge-to-edge iPhone display
-- Add to Home Screen on iOS → opens fullscreen like a native app
 
 ---
 
 ## Local Setup
 
-No installation required. Just open the file:
+No installation required:
 
 ```bash
-# Option 1 — double click
-open index.html
-
-# Option 2 — VS Code Live Server
+# Option 1 — VS Code Live Server (recommended)
 # Right-click index.html → Open with Live Server
 
-# Option 3 — any static server
+# Option 2 — any static server
 npx serve .
 # Open http://localhost:3000
+
+# Option 3 — Python
+python -m http.server 3000
 ```
+
+> ⚠️ Must be served over HTTP (not opened as a file:///) because ES modules require a server.
 
 ---
 
@@ -112,41 +178,50 @@ vercel
 # Framework: Other → Deploy
 ```
 
-### Option B — Vercel Dashboard (No CLI)
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repo
-3. Framework preset: **Other**
-4. Click **Deploy** — live in ~30 seconds
-
-### Option C — GitHub + Vercel (Recommended)
+### Option B — GitHub + Vercel (Recommended)
 ```bash
 git add .
-git commit -m "Update"
+git commit -m "CreditDNA v2 — multi-file architecture"
 git push
 # Vercel auto-deploys on every push
 ```
 
----
-
-## File Structure
-
-```
-creditdna/
-├── index.html      ← Entire app (HTML + CSS + JS + Three.js)
-├── vercel.json     ← Vercel routing config
-└── README.md       ← This file
-```
+### Option C — Vercel Dashboard (No CLI)
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repo
+3. Framework preset: **Other**
+4. Click **Deploy**
 
 ---
 
 ## The Team — BOTSQUAD
 
-| Name | Role |
-|---|---|
-| Simon Paul | Full Stack + Lead |
-| Mayank Bansal | Data Science + Backend |
-| Varsha Rani | UI/UX + Frontend |
-| Deva Nandha | Business Analyst |
+| Name | Role | Admin Email |
+|---|---|---|
+| Simon Paul | Full Stack + Lead | simon@creditdna.in |
+| Mayank Bansal | Data Science + Backend | mayank@creditdna.in |
+| Varsha Rani | UI/UX + Frontend | varsha@creditdna.in |
+| Deva Nandha | Business Analyst | deva@creditdna.in |
+
+---
+
+## Changelog
+
+### v2.0 (March 2025)
+- Restructured from single HTML file to proper multi-file ES module architecture
+- Added Tailwind CSS (Play CDN) with custom theme tokens
+- Added Three.js DNA double helix 3D model with mouse parallax
+- Added separate admin portal (`admin.html`) with triple-gated login
+- Added JSDoc TypeScript typing throughout
+- Added animated SVG score arc, count-up animation
+- Added CSV export in admin portal
+- Fixed checkbox visibility bug (webkit-appearance)
+- Fixed icon overlap bug (replaced emoji with CSS background-image icons)
+- Removed dark mode (light-only)
+
+### v1.0 (Initial)
+- Single `index.html` with all HTML + CSS + JS
+- Basic auth, score simulator, admin dashboard
 
 ---
 
