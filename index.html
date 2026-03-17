@@ -1,17 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <title>CreditDNA — Credit for Everyone Who Uses UPI</title>
-    <meta name="description" content="CreditDNA turns your UPI transaction history into a 300–900 credit score, processed entirely on your device. Free for individuals.">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>CreditDNA — Credit for Every Indian</title>
+<meta name="description" content="Your UPI history is your credit history. CreditDNA builds a 300–900 credit score on your device.">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Tailwind CSS Play CDN -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          accent:  '#d4500f',
+          'accent-h': '#b83d0a',
+          'accent-light': '#fff0e8',
+          'accent-mid':   'rgba(212,80,15,0.15)',
+          'accent-border':'rgba(212,80,15,0.3)',
+          ink:     '#1a1208',
+          'ink-2': '#4a3f30',
+          'ink-3': '#8c7d6a',
+          surface: '#ffffff',
+          'surf-2':'#faf8f3',
+          bg:      '#fffef9',
+          'bg-alt':'#f5f0e8',
+          border:  '#e8e0d0',
+          'border-2':'#d4c9b5',
+          dna:     '#22c55e',
+          green:   '#0f7e5a',
+          'green-bg':'#e8f5ef',
+          red:     '#c0392b',
+          'red-bg':'#fdecea',
+        },
+        fontFamily: {
+          display: ['"Bricolage Grotesque"', 'sans-serif'],
+          body:    ['"Plus Jakarta Sans"',   'sans-serif'],
+        },
+      }
+    }
+  }
+</script>
+
+<!-- Custom styles -->
+<link rel="stylesheet" href="css/styles.css">
+
+<!-- Three.js (global) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+
+<body class="bg-[#fffef9] font-body text-ink antialiased overflow-x-hidden">
+
+<!-- ── NAV ───────────────────────────────── -->
+<nav id="nav" class="fixed top-0 left-0 right-0 z-50 h-16 flex items-center border-b border-[#e8e0d0] nav-glass">
+  <div class="w-full max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
+
+    <div id="logo-btn" class="flex items-center gap-3 cursor-pointer flex-shrink-0">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <rect width="36" height="36" rx="8" fill="#0a1f0a"/>
+        <g stroke="#22c55e" stroke-width="1.8" stroke-linecap="round">
+          <line x1="9" y1="12" x2="27" y2="12"/>
+          <line x1="9" y1="12" x2="9" y2="16"/><line x1="27" y1="12" x2="27" y2="16"/>
+          <line x1="9" y1="16" x2="27" y2="16" opacity=".85"/>
+          <line x1="9" y1="16" x2="9" y2="20"/><line x1="27" y1="16" x2="27" y2="20"/>
+          <line x1="9" y1="20" x2="27" y2="20" opacity=".65"/>
+          <line x1="9" y1="20" x2="9" y2="24"/><line x1="27" y1="20" x2="27" y2="24"/>
+          <line x1="9" y1="24" x2="27" y2="24" opacity=".45"/>
+        </g>
+      </svg>
+      <div class="flex flex-col leading-none">
+        <span class="font-display font-bold text-[17px] text-[#22c55e] tracking-tight">Credit<span class="opacity-80">DNA</span></span>
+        <span class="text-[7.5px] font-semibold tracking-[0.18em] text-[#22c55e] opacity-50 mt-0.5">YOUR CREDIT. YOUR DATA.</span>
+      </div>
+    </div>
+
+    <div id="nav-links" class="hidden md:flex items-center gap-1"></div>
+
+    <div class="flex items-center gap-2">
+      <button id="hb" onclick="window._toggleMM()" aria-label="Menu"
+        class="md:hidden flex flex-col items-center justify-center gap-[5px] w-10 h-10 rounded-xl bg-[#faf8f3] border border-[#e8e0d0] flex-shrink-0">
+        <span class="block w-4 h-[1.5px] bg-[#1a1208] rounded transition-all duration-200"></span>
+        <span class="block w-4 h-[1.5px] bg-[#1a1208] rounded transition-all duration-200"></span>
+        <span class="block w-4 h-[1.5px] bg-[#1a1208] rounded transition-all duration-200"></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile menu -->
+<div id="mobile-menu"></div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- App root -->
+<main id="app" class="pt-16 min-h-screen"></main>
+
+<!-- Boot -->
+<script type="module" src="js/app.js"></script>
+</body>
 </html>
