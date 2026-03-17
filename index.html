@@ -5,11 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>CreditDNA — Credit for Every Indian</title>
-<meta name="description" content="Your UPI history is your credit history. CreditDNA builds a 300–900 credit score on your device.">
+<meta name="description" content="Your UPI history is your credit history. CreditDNA builds a 300–900 score on your device.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsWorker = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; if(typeof pdfjs !== 'undefined') pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;</script>
 <script>
 tailwind.config = {
   theme: {
@@ -31,11 +33,10 @@ tailwind.config = {
   }
 }
 </script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';</script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
+/* ══════════════════════════════════════
+   CreditDNA — Custom Styles
+══════════════════════════════════════ */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: #fffef9; }
 ::-webkit-scrollbar-thumb { background: #d4c9b5; border-radius: 4px; }
@@ -50,16 +51,12 @@ tailwind.config = {
   from { opacity: 0; transform: translateY(18px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes slideDown {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes popIn {
-  0%   { opacity: 0; transform: translateX(-50%) scale(.92); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1); }
-}
+@keyframes fadeIn { from { opacity: 0; } to   { opacity: 1; } }
+@keyframes float { 0%,100% { transform: translateY(0); } 50%      { transform: translateY(-8px); } }
+@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to   { opacity: 1; transform: translateY(0); } }
+@keyframes popIn { 0%   { opacity: 0; transform: translateX(-50%) scale(.92); } 100% { opacity: 1; transform: translateX(-50%) scale(1); } }
+@keyframes scoreReveal { from { opacity:0; transform: scale(.8); } to   { opacity:1; transform: scale(1); } }
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .page-enter { animation: fadeUp .35s ease forwards; }
 
@@ -70,10 +67,10 @@ tailwind.config = {
   box-shadow: 0 1px 3px rgba(26,18,8,.06), 0 8px 24px rgba(26,18,8,.05);
   transition: box-shadow .2s, transform .2s;
 }
-
 .cdna-card:hover {
   box-shadow: 0 4px 12px rgba(26,18,8,.08), 0 16px 40px rgba(26,18,8,.07);
 }
+.cdna-card-lift:hover { transform: translateY(-2px); }
 
 .btn-primary {
   background: #d4500f;
@@ -91,8 +88,8 @@ tailwind.config = {
   gap: 7px;
   font-size: 14px;
   min-height: 44px;
+  white-space: nowrap;
 }
-
 .btn-primary:hover { background: #b83d0a; transform: translateY(-1px); }
 .btn-primary:active { transform: translateY(0); }
 
@@ -113,7 +110,6 @@ tailwind.config = {
   gap: 7px;
   min-height: 44px;
 }
-
 .btn-outline:hover { border-color: #d4c9b5; background: #faf8f3; }
 
 .btn-ghost {
@@ -129,10 +125,9 @@ tailwind.config = {
   transition: all .15s;
   min-height: 36px;
 }
-
 .btn-ghost:hover { background: #faf8f3; color: #1a1208; }
 
-.btn-sm { padding: 8px 16px !important; font-size: 13px !important; min-height: 36px !important; }
+.btn-sm { padding: 8px 16px !important; font-size: 13px !important; min-height: 36px !important; border-radius: 9px !important; }
 .btn-lg { padding: 15px 32px !important; font-size: 16px !important; min-height: 52px !important; }
 .btn-full { width: 100%; }
 .btn-danger { background: #fdecea; color: #c0392b; border: 1.5px solid rgba(192,57,43,.25); border-radius: 9px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all .15s; }
@@ -141,7 +136,14 @@ tailwind.config = {
 .field { margin-bottom: 16px; }
 .field > label { display: block; font-size: 13px; font-weight: 600; color: #4a3f30; margin-bottom: 6px; }
 
-input, select, textarea {
+.input-wrap { position: relative; }
+.input-wrap.has-icon { display: flex; align-items: center; background: #faf8f3; border: 1.5px solid #e8e0d0; border-radius: 12px; transition: border-color .2s, box-shadow .2s; }
+.input-wrap.has-icon:focus-within { border-color: #d4500f; background: #fff; box-shadow: 0 0 0 3px rgba(212,80,15,.12); }
+.input-wrap.has-icon > span.ico { width: 18px; height: 18px; flex-shrink: 0; margin-left: 14px; opacity: .4; pointer-events: none; }
+.input-wrap.has-icon > input { border: none !important; background: transparent !important; box-shadow: none !important; padding-left: 10px !important; flex: 1; min-width: 0; }
+.input-wrap.has-icon > input:focus { border: none !important; box-shadow: none !important; }
+
+input:not([type="checkbox"]):not([type="radio"]), select, textarea {
   width: 100%;
   background: #faf8f3;
   border: 1.5px solid #e8e0d0;
@@ -152,21 +154,25 @@ input, select, textarea {
   border-radius: 12px;
   outline: none;
   transition: all .2s;
+  -webkit-appearance: none;
 }
-
-input:focus, select:focus {
+input:not([type="checkbox"]):not([type="radio"]):focus, select:focus {
   border-color: #d4500f;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(212,80,15,.12);
 }
-
 input[type="checkbox"] {
   width: 18px; height: 18px;
   accent-color: #d4500f;
   cursor: pointer; flex-shrink: 0;
 }
-
 input::placeholder { color: #8c7d6a; }
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238c7d6a' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 40px;
+}
 
 #toast {
   position: fixed;
@@ -180,7 +186,6 @@ input::placeholder { color: #8c7d6a; }
   align-items: center;
   gap: 8px;
 }
-
 .toast-item {
   background: #1a1208;
   color: #fffef9;
@@ -196,7 +201,6 @@ input::placeholder { color: #8c7d6a; }
   max-width: 90vw;
   box-shadow: 0 4px 20px rgba(0,0,0,.2);
 }
-
 .toast-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
 #mobile-menu {
@@ -213,82 +217,38 @@ input::placeholder { color: #8c7d6a; }
   padding-bottom: max(24px, env(safe-area-inset-bottom));
   animation: slideDown .2s ease;
 }
-
 #mobile-menu.open { display: block; }
 
-.mm-item {
-  display: flex; align-items: center; gap: 12px;
-  width: 100%; padding: 13px 14px;
-  border-radius: 12px;
-  font-size: 15px; font-weight: 500; color: #4a3f30;
-  cursor: pointer; background: none; border: none;
-  transition: all .15s; min-height: 48px; text-align: left;
-  font-family: inherit;
+.msg-err { background: #fdecea; border: 1px solid rgba(192,57,43,.25); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; color: #c0392b; font-size: 13px; font-weight: 500; }
+.msg-ok  { background: #e8f5ef; border: 1px solid rgba(15,126,90,.25); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; color: #0f7e5a; font-size: 13px; font-weight: 500; }
+
+.auth-tabs { display: flex; background: #faf8f3; border-radius: 12px; padding: 4px; margin-bottom: 24px; }
+.auth-tab {
+  flex: 1; padding: 9px; text-align: center; font-size: 14px; font-weight: 600;
+  border-radius: 9px; cursor: pointer; transition: all .2s;
+  color: #8c7d6a; border: none; background: none; font-family: inherit;
 }
-
-.mm-item:hover { background: #faf8f3; color: #1a1208; }
-.mm-div { height: 1px; background: #e8e0d0; margin: 8px 0; }
-
-.nav-link {
-  font-size: 14px; font-weight: 500; color: #4a3f30;
-  padding: 7px 12px; border-radius: 8px; cursor: pointer;
-  border: none; background: none; transition: all .15s;
-  min-height: 36px; font-family: inherit;
-}
-
-.nav-link:hover, .nav-link.active { background: #faf8f3; color: #1a1208; }
-
-.user-avatar { width: 34px; height: 34px; border-radius: 10px; background: #fff0e8; border: 1.5px solid rgba(212,80,15,.3); display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-size: 14px; font-weight: 800; color: #d4500f; flex-shrink: 0; }
-
-.badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 600; padding: 4px 12px;
-  border-radius: 999px;
-}
-
-.badge-green  { background: #e8f5ef; color: #0f7e5a; }
-
-.progress-bar { height: 8px; background: #f5f0e8; border-radius: 999px; overflow: hidden; }
-.progress-fill { height: 100%; border-radius: 999px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
-
-#dna-canvas {
-  position: absolute;
-  top: 0; right: 0;
-  width: 50%;
-  height: 100%;
-  pointer-events: none;
-}
-
-@media (max-width: 768px) {
-  #dna-canvas { display: none; }
-}
-
-.label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8c7d6a; margin-bottom: 6px; display: block; }
+.auth-tab.active { background: #fff; color: #1a1208; box-shadow: 0 1px 3px rgba(26,18,8,.1); }
 
 .section { padding: 80px 0; }
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 clamp(16px,4vw,32px); }
 
 .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 20px; }
 .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 18px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 16px; }
 
-.msg-err { background: #fdecea; border: 1px solid rgba(192,57,43,.25); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; color: #c0392b; font-size: 13px; font-weight: 500; }
-.msg-ok  { background: #e8f5ef; border: 1px solid rgba(15,126,90,.25); border-radius: 12px; padding: 11px 14px; margin-bottom: 14px; color: #0f7e5a; font-size: 13px; font-weight: 500; }
-
-.auth-page { min-height: calc(100vh - 64px); display: grid; grid-template-columns: 1fr 1fr; }
-.auth-left { background: #1a1208; padding: 48px; display: flex; flex-direction: column; justify-content: space-between; }
-.auth-right { padding: 48px clamp(24px,5vw,56px); display: flex; flex-direction: column; justify-content: center; overflow-y: auto; max-height: calc(100vh - 64px); }
-
-@media (max-width: 900px) {
-  .auth-page { grid-template-columns: 1fr; min-height: auto; }
-  .auth-left  { display: none; }
-  .auth-right { padding: 32px 20px 40px; justify-content: flex-start; min-height: calc(100vh - 64px); }
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; padding: 4px 12px;
+  border-radius: 999px;
 }
+.badge-accent { background: #fff0e8; color: #d4500f; border: 1px solid rgba(212,80,15,.3); }
+.badge-green  { background: #e8f5ef; color: #0f7e5a; }
 
-.db-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.progress-bar { height: 8px; background: #f5f0e8; border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 999px; transition: width 1.2s cubic-bezier(.4,0,.2,1); }
 
-@media (max-width: 768px) {
-  .db-grid { grid-template-columns: 1fr; }
-}
+.label { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #8c7d6a; margin-bottom: 6px; display: block; }
 
 .txn-ico { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 
@@ -298,7 +258,7 @@ input::placeholder { color: #8c7d6a; }
 
 <nav id="nav" class="fixed top-0 left-0 right-0 z-50 h-16 flex items-center border-b border-[#e8e0d0] nav-glass">
   <div class="w-full max-w-7xl mx-auto px-4 md:px-8 flex items-center justify-between gap-4">
-    <div id="logo-btn" class="flex items-center gap-3 cursor-pointer flex-shrink-0">
+    <div id="logo-btn" class="flex items-center gap-3 cursor-pointer flex-shrink-0" onclick="window._go('landing')">
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
         <rect width="36" height="36" rx="8" fill="#0a1f0a"/>
         <g stroke="#22c55e" stroke-width="1.8" stroke-linecap="round">
@@ -333,37 +293,27 @@ input::placeholder { color: #8c7d6a; }
 <main id="app" class="pt-16 min-h-screen"></main>
 
 <script>
-// ══════════════════════════════════════════════════════
-// DATABASE & CONFIG
-// ══════════════════════════════════════════════════════
+const ADMIN_EMAILS = ['simon@creditdna.in', 'admin@creditdna.in'];
+const ADMIN_KEY = 'CDNA2025';
 
-const KEYS = {
-  USERS: 'cdna_users',
-  ME:    'cdna_me',
+const OCC_LABELS = {
+  gig: 'Gig Worker', farmer: 'Farmer', student: 'Student', sme: 'Business Owner',
+  daily: 'Daily Wage Worker', freelance: 'Freelancer', salaried: 'Salaried Employee', other: 'Other',
 };
 
+const scoreColor = s => !s ? '#8c7d6a' : s >= 750 ? '#0f7e5a' : s >= 650 ? '#0d7c52' : s >= 550 ? '#d4500f' : '#c0392b';
+const scoreTier = s => !s ? '—' : s >= 750 ? 'Very Good' : s >= 650 ? 'Good' : s >= 550 ? 'Fair' : 'Poor';
+const scorePct = s => !s ? 0 : ((s - 300) / 600 * 100);
+const fmtAmt = n => n > 0 ? `+₹${n.toLocaleString('en-IN')}` : `−₹${Math.abs(n).toLocaleString('en-IN')}`;
+const isAdmin = u => !!(u && ADMIN_EMAILS.includes((u.email || '').toLowerCase()));
+const escapeHTML = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+
+const KEYS = { USERS: 'cdna_users', ME: 'cdna_me' };
 const DB = {
-  users: () => {
-    try { return JSON.parse(localStorage.getItem(KEYS.USERS) || '[]'); }
-    catch { return []; }
-  },
+  users: () => { try { return JSON.parse(localStorage.getItem(KEYS.USERS) || '[]'); } catch { return []; } },
   save: u => localStorage.setItem(KEYS.USERS, JSON.stringify(u)),
-  me: () => {
-    try { 
-      const me = localStorage.getItem(KEYS.ME);
-      return me ? JSON.parse(me) : null;
-    }
-    catch { return null; }
-  },
-  setMe: u => {
-    try {
-      localStorage.setItem(KEYS.ME, JSON.stringify(u));
-      const verify = localStorage.getItem(KEYS.ME);
-      if (!verify) console.warn('⚠️ localStorage.setMe failed - data not persisted');
-    } catch (e) {
-      console.error('localStorage error:', e);
-    }
-  },
+  me: () => { try { return JSON.parse(localStorage.getItem(KEYS.ME) || 'null'); } catch { return null; } },
+  setMe: u => localStorage.setItem(KEYS.ME, JSON.stringify(u)),
   logout: () => localStorage.removeItem(KEYS.ME),
   findByEmail: email => DB.users().find(u => u.email.toLowerCase() === email.toLowerCase()),
   updateUser: patch => {
@@ -378,46 +328,7 @@ const DB = {
     }
     return null;
   },
-  deleteUser: id => {
-    const users = DB.users().filter(u => u.id !== id);
-    DB.save(users);
-  },
 };
-
-const ADMIN_EMAILS = [
-  'simon@creditdna.in',
-  'mayank@creditdna.in',
-  'varsha@creditdna.in',
-  'deva@creditdna.in',
-  'admin@creditdna.in',
-];
-
-const OCC_LABELS = {
-  gig:      'Gig Worker',
-  farmer:   'Farmer',
-  student:  'Student',
-  sme:      'Business Owner',
-  daily:    'Daily Wage Worker',
-  freelance:'Freelancer',
-  salaried: 'Salaried Employee',
-  other:    'Other',
-};
-
-const scoreColor = s => !s ? '#8c7d6a' : s >= 750 ? '#0f7e5a' : s >= 650 ? '#0d7c52' : s >= 550 ? '#d4500f' : '#c0392b';
-const scoreTier = s => !s ? '—' : s >= 750 ? 'Very Good' : s >= 650 ? 'Good' : s >= 550 ? 'Fair' : 'Poor';
-const scorePct = s => !s ? 0 : ((s - 300) / 600 * 100);
-const fmtAmt = n => n > 0 ? `+₹${n.toLocaleString('en-IN')}` : `−₹${Math.abs(n).toLocaleString('en-IN')}`;
-const isAdmin = u => !!(u && ADMIN_EMAILS.includes((u.email || '').toLowerCase()));
-
-function escapeHTML(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-// ══════════════════════════════════════════════════════
-// TOAST
-// ══════════════════════════════════════════════════════
 
 function toast(msg, type = 'info') {
   const el = document.getElementById('toast');
@@ -426,7 +337,7 @@ function toast(msg, type = 'info') {
   const color  = colors[type] || colors.info;
   const item = document.createElement('div');
   item.className = 'toast-item';
-  item.innerHTML = `<span class="toast-dot" style="background:${color}"></span>${escapeHTML(msg)}`;
+  item.innerHTML = `<span class="toast-dot" style="background:${color}"></span>${msg}`;
   el.appendChild(item);
   setTimeout(() => {
     item.style.opacity = '0';
@@ -435,19 +346,10 @@ function toast(msg, type = 'info') {
   }, 3000);
 }
 
-// ══════════════════════════════════════════════════════
-// AUTH
-// ══════════════════════════════════════════════════════
-
 function doLogin(email, password) {
   const user = DB.findByEmail(email);
   if (!user || user.password !== password) return null;
   DB.setMe(user);
-  const verify = DB.me();
-  if (!verify) {
-    console.warn('Login: failed to persist user');
-    DB.setMe(user);
-  }
   return user;
 }
 
@@ -458,17 +360,18 @@ function doRegister(data) {
   }
   const isAdm = ADMIN_EMAILS.includes(data.email.toLowerCase());
   const user = {
-    id:      Date.now(),
-    name:    data.name,
-    email:   data.email.toLowerCase(),
-    password:data.password,
-    phone:   data.phone || '',
-    occ:     data.occ,
-    txn:     data.txn,
-    upiApp:  data.upiApp,
+    id: Date.now(),
+    name: data.name,
+    email: data.email.toLowerCase(),
+    password: data.password,
+    phone: data.phone || '',
+    occ: data.occ,
+    txn: data.txn,
+    upiApp: data.upiApp,
     isAdmin: isAdm,
-    score:   null,
-    joined:  new Date().toISOString(),
+    score: null,
+    joined: new Date().toISOString(),
+    transactions: [],
   };
   const users = DB.users();
   users.push(user);
@@ -483,211 +386,64 @@ function doLogout() {
   toast('See you soon!', 'info');
 }
 
-// ══════════════════════════════════════════════════════
-// PDF + OCR EXTRACTION (FIXED)
-// ══════════════════════════════════════════════════════
+window._toggleMM = () => {
+  const mm = document.getElementById('mobile-menu');
+  mm.classList.toggle('open');
+};
 
-async function extractPDFTransactions(file) {
-  const statusEl = document.getElementById('ocr-status');
+window._go = (page) => {
+  const u = DB.me();
+  document.getElementById('mobile-menu').classList.remove('open');
   
-  function showStatus(type, msg, sub = '') {
-    const colors = { loading: '#1d5fa8', ok: '#0f7e5a', error: '#c0392b', warn: '#b45309' };
-    const bgs    = { loading: '#e8f0fb', ok: '#e8f5ef', error: '#fdecea', warn: '#fff8e6' };
-    const c = colors[type] || colors.loading;
-    const bg = bgs[type] || bgs.loading;
-    statusEl.style.display = 'block';
-    statusEl.innerHTML = `
-    <div style="background:${bg};border:1px solid ${c}30;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;">
-      ${type === 'loading' ? `<div style="width:16px;height:16px;border:2px solid ${c};border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;margin-top:2px;"></div>` : ''}
-      <div>
-        <div style="font-size:13px;font-weight:600;color:${c};">${msg}</div>
-        ${sub ? `<div style="font-size:12px;color:${c};opacity:.7;margin-top:2px;">${sub}</div>` : ''}
-      </div>
-    </div>
-    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
+  if (page === 'landing') renderLanding(window._go);
+  else if (page === 'login') renderLogin(window._go);
+  else if (page === 'register') renderRegister(window._go);
+  else if (page === 'dashboard') {
+    if (!u) { window._go('login'); return; }
+    renderDashboard(window._go);
   }
-
-  try {
-    showStatus('loading', 'Reading PDF...', 'Converting pages to images');
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    console.log('PDF Pages:', pdf.numPages);
-
-    let fullText = '';
-
-    // PDF → Image → OCR for each page
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      showStatus('loading', `Processing page ${pageNum}/${pdf.numPages}...`, 'Running OCR');
-      const page = await pdf.getPage(pageNum);
-      const viewport = page.getViewport({ scale: 2 });
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      await page.render({ canvasContext: ctx, viewport }).promise;
-
-      // Convert canvas to image for OCR
-      const imageData = canvas.toDataURL('image/png');
-      console.log(`Page ${pageNum} rendered, running OCR...`);
-
-      // Run Tesseract OCR
-      const result = await Tesseract.recognize(imageData, 'eng', {
-        logger: m => console.log(`OCR page ${pageNum}:`, m.status, Math.round(m.progress * 100) + '%')
-      });
-
-      const pageText = result.data.text;
-      console.log(`Page ${pageNum} OCR result (${pageText.length} chars):`, pageText.substring(0, 200));
-      fullText += pageText + '\n';
-    }
-
-    fullText = fullText.trim();
-    console.log('Total extracted text:', fullText.length, 'chars');
-
-    if (fullText.length < 50) {
-      showStatus('warn', '⚠️ Could not extract text from PDF', 'Try manual questionnaire below');
-      return;
-    }
-
-    showStatus('loading', 'Parsing transactions...', 'Almost done');
-    const extractedTxns = parseUPITransactions(fullText);
-    console.log(`Found ${extractedTxns.length} transactions`);
-
-    if (extractedTxns.length === 0) {
-      showStatus('warn', '⚠️ No transactions detected', 'Try the manual questionnaire');
-      return;
-    }
-
-    showStatus('ok', '✅ Found ' + extractedTxns.length + ' transactions', 'Review and calculate score');
-    window._extractedTxns = extractedTxns;
-    showTransactionPreview(extractedTxns);
-    document.getElementById('calc-section').style.display = 'block';
-
-  } catch (err) {
-    console.error('PDF/OCR error:', err);
-    showStatus('error', '❌ Could not process PDF', err.message || 'Unknown error');
+  else if (page === 'check') {
+    if (!u) { window._go('login'); return; }
+    renderCheck(window._go);
   }
-}
-
-function parseUPITransactions(text) {
-  const txns = [];
-  const lines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-  console.log(`Parsing ${lines.length} lines...`);
-
-  const datePatterns = [
-    /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/,
-    /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
-    /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/i,
-  ];
-
-  const creditWords = /credit|received|refund|cashback|salary|income|deposit|transfer in|topup|add money|income credited|cr\b/i;
-  const debitWords = /debit|paid|payment|sent|purchase|transfer out|withdrawal|spent|dr\b/i;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (line.length < 5) continue;
-
-    let dateStr = '';
-    for (const pattern of datePatterns) {
-      const match = line.match(pattern);
-      if (match) {
-        dateStr = match[0];
-        break;
-      }
-    }
-    if (!dateStr) continue;
-
-    const amounts = [...line.matchAll(/[₹Rs]?\s*([\d,]+(?:\.\d{1,2})?)/g)];
-    if (amounts.length === 0) continue;
-
-    const rawAmt = parseFloat(amounts[amounts.length - 1][1].replace(/,/g, ''));
-    if (isNaN(rawAmt) || rawAmt < 1 || rawAmt > 10000000) continue;
-
-    const isCredit = creditWords.test(line) && !debitWords.test(line);
-    const isDebit = debitWords.test(line) && !creditWords.test(line);
-    const credit = isCredit || (!isCredit && !isDebit ? false : isCredit);
-
-    let merchant = line
-      .replace(dateStr, '')
-      .replace(/[₹Rs]?\s*[\d,]+(?:\.\d{1,2})?/g, '')
-      .replace(/\b(?:credit|received|refund|cashback|salary|income|deposit|transfer|topup|add money|credited|debit|paid|payment|sent|purchase|withdrawal|spent|cr|dr)\b/gi, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 50);
-
-    if (!merchant || merchant.length < 2) {
-      merchant = credit ? 'Income' : 'Payment';
-    }
-
-    txns.push({
-      date: dateStr,
-      merchant: merchant,
-      amt: credit ? rawAmt : -rawAmt,
-      credit: credit,
-    });
-
-    console.log(`  ✓ ${dateStr} | ${merchant.substring(0, 30)} | ₹${rawAmt} | ${credit ? 'CR' : 'DR'}`);
+  else if (page === 'logout') {
+    doLogout();
+    window._go('landing');
   }
+};
 
-  console.log(`Total parsed: ${txns.length} transactions`);
-  return txns.slice(0, 200);
-}
-
-function showTransactionPreview(txns) {
-  const income = txns.filter(t=>t.credit).reduce((a,t)=>a+t.amt,0);
-  const spend  = txns.filter(t=>!t.credit).reduce((a,t)=>a+Math.abs(t.amt),0);
-  const preview5 = txns.slice(0, 5);
-
-  const el = document.getElementById('txn-preview');
-  el.style.display = 'block';
-  el.innerHTML = `
-  <div class="cdna-card" style="padding:0;border-radius:16px;overflow:hidden;">
-    <div style="padding:16px 20px;border-bottom:1px solid #e8e0d0;background:#faf8f3;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-      <div style="font-size:13px;font-weight:700;color:#1a1208;">Step 2 — Review Extracted Transactions</div>
-      <div style="display:flex;gap:16px;">
-        <span style="font-size:12px;color:#0f7e5a;font-weight:600;">+₹${income.toLocaleString('en-IN')} income</span>
-        <span style="font-size:12px;color:#c0392b;font-weight:600;">−₹${spend.toLocaleString('en-IN')} spent</span>
-      </div>
-    </div>
-    <div style="padding:16px 20px;">
-      <div style="font-size:12px;color:#8c7d6a;margin-bottom:12px;">Showing first 5 of ${txns.length} transactions detected</div>
-      ${preview5.map(t => `
-      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f0e8;">
-        <div style="width:30px;height:30px;border-radius:8px;background:${t.credit?'#e8f5ef':'#fdecea'};display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;">${t.credit?'💰':'💳'}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:13px;font-weight:500;color:#1a1208;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHTML(t.merchant)}</div>
-          <div style="font-size:11px;color:#8c7d6a;">${escapeHTML(t.date)}</div>
-        </div>
-        <div style="font-size:13px;font-weight:700;color:${t.credit?'#0f7e5a':'#c0392b'};flex-shrink:0;">${fmtAmt(t.amt)}</div>
-      </div>`).join('')}
-      ${txns.length > 5 ? `<div style="font-size:12px;color:#8c7d6a;padding-top:8px;text-align:center;">+ ${txns.length - 5} more transactions</div>` : ''}
-    </div>
-  </div>`;
-}
-
-// ══════════════════════════════════════════════════════
-// PAGES
-// ══════════════════════════════════════════════════════
+// Initialize
+window._go('landing');
 
 function renderLanding(go) {
   document.getElementById('app').innerHTML = `
-  <div class="page-enter">
-    <section style="padding:80px clamp(16px,4vw,32px); min-height:88vh; display:flex; align-items:center;">
-      <div class="wrap">
-        <h1 class="font-display font-extrabold text-ink mb-4" style="font-size:clamp(38px,6vw,72px); line-height:1.08;">
-          Credit for<br><span style="color:#d4500f">everyone</span><br>who uses UPI
+  <div class="page-enter" style="padding:60px clamp(16px,4vw,32px)">
+    <div class="wrap">
+      <div style="text-align:center;margin-bottom:40px;">
+        <h1 class="font-display font-extrabold text-ink" style="font-size:clamp(32px,6vw,56px);line-height:1.1;margin-bottom:16px;">
+          Credit for everyone who uses <span style="color:#d4500f;">UPI</span>
         </h1>
-        <p style="font-size:clamp(15px,2vw,19px); color:#4a3f30; max-width:480px; line-height:1.7; margin-bottom:28px;">
-          Your UPI transaction history is rich financial data. We turn it into a 300–900 score — processed on your device, never shared raw.
+        <p style="font-size:16px;color:#4a3f30;margin-bottom:28px;max-width:600px;margin-left:auto;margin-right:auto;">
+          Your UPI transaction history is rich financial data. CreditDNA turns it into a 300–900 credit score
+          — processed entirely on your device, never shared raw.
         </p>
-        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
           <button class="btn-primary btn-lg" onclick="window._go('register')">Get Your Score Free →</button>
-          <button class="btn-outline btn-lg" onclick="window._go('check')">Check Score</button>
+          <button class="btn-outline btn-lg" onclick="window._go('login')">Sign In</button>
         </div>
       </div>
-    </section>
-    <footer style="border-top:1px solid #e8e0d0; padding:28px clamp(16px,4vw,32px); text-align:center;">
-      <p style="font-size:13px; color:#8c7d6a;">CreditDNA © 2025 · BOTSQUAD · SRM IST</p>
-    </footer>
+
+      <div class="grid-3" style="margin:60px 0;">
+        ${[['🔒','Privacy First','Raw data never leaves your device'],
+           ['⚡','Instant Results','Score generated in 200ms'],
+           ['🧬','50+ Signals','More accurate than CIBIL']].map(([i,t,d]) => `
+        <div class="cdna-card" style="padding:28px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:12px;">${i}</div>
+          <div class="font-display font-bold text-ink mb-2" style="font-size:18px;">${t}</div>
+          <div style="font-size:14px;color:#8c7d6a;">${d}</div>
+        </div>`).join('')}
+      </div>
+    </div>
   </div>`;
 }
 
@@ -707,45 +463,31 @@ function renderRegister(go) {
 
 function _renderAuth(go) {
   document.getElementById('app').innerHTML = `
-  <div class="auth-page page-enter">
-    <div class="auth-left">
-      <div>
-        <h2 class="font-display font-extrabold mb-4" style="font-size:clamp(28px,3.5vw,40px); color:#faf6ec; line-height:1.1;">
-          Credit for everyone<br>who uses UPI
-        </h2>
-        <p style="font-size:15px; color:rgba(250,246,236,.55); line-height:1.75;">
-          Your UPI transaction history is rich financial data. We turn it into a 300–900 score — processed on your device, never shared raw.
-        </p>
+  <div class="page-enter" style="padding:40px clamp(16px,4vw,32px);max-width:500px;margin:0 auto;">
+    <div style="margin-bottom:32px;">
+      <h1 class="font-display font-extrabold text-ink mb-2" style="font-size:clamp(24px,4vw,32px);">
+        ${authTab === 'login' ? 'Welcome back 👋' : 'Create your account'}
+      </h1>
+      <p style="font-size:14px;color:#8c7d6a;margin-bottom:24px;">
+        ${authTab === 'login' ? 'Sign in to your CreditDNA account' : 'Free for individuals · Takes 2 minutes'}
+      </p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab${authTab === 'login' ? ' active' : ''}" onclick="window._authSwitch('login')">Sign In</button>
+        <button class="auth-tab${authTab === 'register' ? ' active' : ''}" onclick="window._authSwitch('register')">Create Account</button>
       </div>
-      <div style="font-size:12px; color:rgba(250,246,236,.2);">© 2025 BOTSQUAD</div>
-    </div>
 
-    <div class="auth-right">
-      <div style="max-width:420px; width:100%; margin:0 auto;">
-        <h1 class="font-display font-extrabold text-ink mb-2" style="font-size:clamp(22px,4vw,28px);">
-          ${authTab === 'login' ? 'Welcome back 👋' : 'Create your account'}
-        </h1>
-        <p style="font-size:14px; color:#8c7d6a; margin-bottom:24px;">
-          ${authTab === 'login' ? 'Sign in to your CreditDNA account' : 'Free for individuals'}
-        </p>
+      <div id="auth-form"></div>
 
-        <div style="display:flex; background:#faf8f3; border-radius:12px; padding:4px; margin-bottom:24px;">
-          <button class="auth-tab${authTab === 'login' ? ' active' : ''}" onclick="window._authSwitch('login')" style="flex:1; padding:9px; text-align:center; font-size:14px; font-weight:600; border-radius:9px; cursor:pointer; transition:all .2s; color:${authTab==='login'?'#1a1208':'#8c7d6a'}; border:none; background:${authTab==='login'?'#fff':'transparent'}; font-family:inherit;">Sign In</button>
-          <button class="auth-tab${authTab === 'register' ? ' active' : ''}" onclick="window._authSwitch('register')" style="flex:1; padding:9px; text-align:center; font-size:14px; font-weight:600; border-radius:9px; cursor:pointer; transition:all .2s; color:${authTab==='register'?'#1a1208':'#8c7d6a'}; border:none; background:${authTab==='register'?'#fff':'transparent'}; font-family:inherit;">Create Account</button>
-        </div>
-
-        <div id="auth-form"></div>
-
-        <p style="text-align:center; margin-top:18px; font-size:13px; color:#8c7d6a;">
-          ${authTab === 'login'
-            ? `Don't have an account? <span style="color:#d4500f; cursor:pointer; font-weight:600;" onclick="window._authSwitch('register')">Sign up free</span>`
-            : `Already registered? <span style="color:#d4500f; cursor:pointer; font-weight:600;" onclick="window._authSwitch('login')">Sign in</span>`}
-        </p>
-      </div>
+      <p style="text-align:center;margin-top:18px;font-size:13px;color:#8c7d6a;">
+        ${authTab === 'login'
+          ? `Don't have an account? <span style="color:#d4500f;cursor:pointer;font-weight:600" onclick="window._authSwitch('register')">Sign up free</span>`
+          : `Already registered? <span style="color:#d4500f;cursor:pointer;font-weight:600" onclick="window._authSwitch('login')">Sign in</span>`}
+      </p>
     </div>
   </div>`;
 
-  window._authSwitch = (t) => { authTab = t; RS = 1; RD = {}; _renderAuth(go); };
+  window._authSwitch = (tab) => { authTab = tab; RS = 1; RD = {}; _renderAuth(go); };
   window._authGo = go;
   _renderAuthForm(go);
 }
@@ -753,85 +495,101 @@ function _renderAuth(go) {
 function _renderAuthForm(go) {
   const wrap = document.getElementById('auth-form');
   if (!wrap) return;
+  if (authTab === 'login') _renderLoginForm(wrap, go);
+  else _renderRegisterStep(wrap, go);
+}
 
-  if (authTab === 'login') {
-    wrap.innerHTML = `
-      <div id="lerr"></div>
-      <div class="field"><label>Email Address</label>
-        <input id="l-email" type="email" placeholder="you@email.com" autocomplete="email">
-      </div>
-      <div class="field"><label>Password</label>
-        <input id="l-pass" type="password" placeholder="Your password" autocomplete="current-password"
-          onkeydown="if(event.key==='Enter')window._loginSubmit()">
-      </div>
-      <button class="btn-primary btn-full btn-lg" style="border-radius:12px;" onclick="window._loginSubmit()">Sign In →</button>`;
+function _renderLoginForm(wrap, go) {
+  wrap.innerHTML = `
+    <div id="lerr"></div>
+    <div class="field"><label>Email Address</label>
+      <input id="l-email" type="email" placeholder="you@email.com" autocomplete="email">
+    </div>
+    <div class="field"><label>Password</label>
+      <input id="l-pass" type="password" placeholder="Your password" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')window._loginSubmit()">
+    </div>
+    <button class="btn-primary btn-full btn-lg" style="margin-top:8px;border-radius:12px;" onclick="window._loginSubmit()">Sign In →</button>`;
 
-    window._loginSubmit = () => {
-      const email = document.getElementById('l-email').value.trim();
-      const pass  = document.getElementById('l-pass').value;
-      const err   = document.getElementById('lerr');
-      if (!email || !pass) { err.innerHTML = '<div class="msg-err">Please fill in all fields</div>'; return; }
-      const user = doLogin(email, pass);
-      if (!user) { err.innerHTML = '<div class="msg-err">Incorrect email or password</div>'; return; }
-      toast(`Welcome back, ${user.name.split(' ')[0]}! 👋`, 'ok');
-      setTimeout(() => go('dashboard'), 150);
-    };
-  } else {
-    const steps = ['Your Info', 'About You', 'Consent'];
-    const fields = RS === 1 ? `
-      <div class="field"><label>Full Name *</label>
-        <input id="r-name" value="${RD.name||''}" placeholder="e.g. Ravi Kumar" autocomplete="name">
-      </div>
-      <div class="field"><label>Email Address *</label>
-        <input id="r-email" type="email" value="${RD.email||''}" placeholder="you@email.com" autocomplete="email">
-      </div>
-      <div class="field"><label>Password *</label>
-        <input id="r-pass" type="password" value="${RD.pass||''}" placeholder="At least 6 characters">
-      </div>
-      <div class="field"><label>Confirm Password *</label>
-        <input id="r-conf" type="password" value="${RD.conf||''}" placeholder="Repeat password">
-      </div>` : RS === 2 ? `
-      <div class="field"><label>Phone Number</label>
-        <input id="r-phone" type="tel" value="${RD.phone||''}" placeholder="+91 9000000000">
-      </div>
-      <div class="field"><label>Occupation *</label>
-        <select id="r-occ">
-          <option value="">Select your occupation</option>
-          <option value="gig"${RD.occ==='gig'?' selected':''}>Gig Worker (Swiggy, Zomato, Ola)</option>
-          <option value="farmer"${RD.occ==='farmer'?' selected':''}>Farmer</option>
-          <option value="student"${RD.occ==='student'?' selected':''}>Student</option>
-          <option value="sme"${RD.occ==='sme'?' selected':''}>Business Owner</option>
-          <option value="daily"${RD.occ==='daily'?' selected':''}>Daily Wage Worker</option>
-          <option value="freelance"${RD.occ==='freelance'?' selected':''}>Freelancer</option>
-          <option value="salaried"${RD.occ==='salaried'?' selected':''}>Salaried Employee</option>
-          <option value="other"${RD.occ==='other'?' selected':''}>Other</option>
-        </select>
-      </div>` : `
-      <div style="background:#fff0e8; border:1.5px solid rgba(212,80,15,.3); border-radius:12px; padding:16px; margin-bottom:16px;">
-        <div style="font-size:12px; font-weight:700; color:#d4500f; margin-bottom:8px;">OUR PRIVACY COMMITMENT</div>
-        <div style="font-size:13px; color:#4a3f30; line-height:1.8;">
-          ✅ Raw UPI data never uploaded<br>✅ All scoring on-device<br>✅ Banks receive score only
-        </div>
-      </div>
-      <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer;">
-        <input type="checkbox" id="r-consent" style="margin-top:3px;">
-        <span style="font-size:13px; color:#4a3f30; line-height:1.6;">
-          I agree to CreditDNA's Privacy Policy
-        </span>
-      </label>`;
+  window._loginSubmit = () => {
+    const email = document.getElementById('l-email').value.trim();
+    const pass  = document.getElementById('l-pass').value;
+    const err   = document.getElementById('lerr');
+    if (!email || !pass) { err.innerHTML = '<div class="msg-err">Please fill in all fields</div>'; return; }
+    const user = doLogin(email, pass);
+    if (!user) { err.innerHTML = '<div class="msg-err">Incorrect email or password</div>'; return; }
+    toast(`Welcome back, ${user.name.split(' ')[0]}! 👋`, 'ok');
+    setTimeout(() => go('dashboard'), 1000);
+  };
+}
 
-    wrap.innerHTML = `
-      <div id="rerr"></div>${fields}
-      <div style="display:flex; gap:10px; margin-top:18px;">
-        ${RS > 1 ? `<button class="btn-outline" style="flex:1;" onclick="window._rBack()">← Back</button>` : ''}
-        <button class="btn-primary" style="flex:2; border-radius:12px;" onclick="window._rNext()">
-          ${RS < 3 ? 'Continue →' : 'Create Account →'}
-        </button>
-      </div>`;
+function _renderRegisterStep(wrap, go) {
+  const steps = ['Your Info', 'About You', 'Consent'];
+  let fields = '';
 
-    window._rBack = () => { RS--; _renderAuthForm(go); };
-    window._rNext = () => _validateStep(wrap, go);
-  }
+  if (RS === 1) fields = `
+    <div class="field"><label>Full Name *</label>
+      <input id="r-name" value="${RD.name||''}" placeholder="e.g. Ravi Kumar" autocomplete="name">
+    </div>
+    <div class="field"><label>Email Address *</label>
+      <input id="r-email" type="email" value="${RD.email||''}" placeholder="you@email.com" autocomplete="email">
+    </div>
+    <div class="field"><label>Password *</label>
+      <input id="r-pass" type="password" value="${RD.pass||''}" placeholder="At least 6 characters" autocomplete="new-password">
+    </div>
+    <div class="field"><label>Confirm Password *</label>
+      <input id="r-conf" type="password" value="${RD.conf||''}" placeholder="Repeat password" autocomplete="new-password">
+    </div>`;
+
+  else if (RS === 2) fields = `
+    <div class="field"><label>Phone Number</label>
+      <input id="r-phone" type="tel" value="${RD.phone||''}" placeholder="+91 00000 00000" autocomplete="tel">
+    </div>
+    <div class="field"><label>Occupation *</label>
+      <select id="r-occ">
+        <option value="">Select your occupation</option>
+        ${[['gig','Gig Worker (Swiggy, Zomato, Ola)'],['farmer','Farmer / Agricultural Worker'],['student','Student'],
+           ['sme','Small Business / SME Owner'],['daily','Daily Wage Worker'],['freelance','Freelancer / Self-Employed'],
+           ['salaried','Salaried Employee'],['other','Other']]
+          .map(([v,l]) => `<option value="${v}"${RD.occ===v?' selected':''}>${l}</option>`).join('')}
+      </select>
+    </div>`;
+
+  else fields = `
+    <div class="field"><label>Primary UPI App</label>
+      <select id="r-upi">
+        ${[['gpay','Google Pay'],['phonepe','PhonePe'],['paytm','Paytm'],['bhim','BHIM UPI'],['other','Other']]
+          .map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}
+      </select>
+    </div>
+    <div style="background:#fff0e8;border:1.5px solid rgba(212,80,15,.3);border-radius:12px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.08em;color:#d4500f;margin-bottom:10px;">OUR PRIVACY COMMITMENT</div>
+      <div style="font-size:13px;color:#4a3f30;line-height:1.8;">
+        ✅ Raw UPI data <strong>never uploaded</strong><br>
+        ✅ All scoring runs <strong>on your device</strong><br>
+        ✅ Banks receive <strong>score only</strong> — not transactions<br>
+        ✅ Delete your account anytime
+      </div>
+    </div>
+    <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+      <input type="checkbox" id="r-consent" style="margin-top:3px;">
+      <span style="font-size:13px;color:#4a3f30;line-height:1.6;">
+        I agree to CreditDNA's Privacy Policy and consent to on-device processing of my UPI history.
+      </span>
+    </label>`;
+
+  wrap.innerHTML = `
+    <p style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8c7d6a;margin-bottom:18px;">STEP ${RS} OF 3</p>
+    <div id="rerr"></div>${fields}
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      ${RS > 1 ? `<button class="btn-outline" style="flex:1;" onclick="window._rBack()">← Back</button>` : ''}
+      <button class="btn-primary" style="flex:2;border-radius:12px;padding:13px;font-size:15px;" onclick="window._rNext()">
+        ${RS < 3 ? 'Continue →' : 'Create Account →'}
+      </button>
+    </div>`;
+
+  window._rBack = () => { RS--; _renderRegisterStep(document.getElementById('auth-form'), go); };
+  window._rNext = () => _validateStep(wrap, go);
 }
 
 function _validateStep(wrap, go) {
@@ -845,130 +603,172 @@ function _validateStep(wrap, go) {
     if (!n||!e||!p||!c) { err.innerHTML = '<div class="msg-err">Please fill in all fields</div>'; return; }
     if (p.length < 6) { err.innerHTML = '<div class="msg-err">Password must be at least 6 characters</div>'; return; }
     if (p !== c) { err.innerHTML = '<div class="msg-err">Passwords don\'t match</div>'; return; }
-    Object.assign(RD, { name:n, email:e, pass:p, conf:c }); RS++; _renderAuthForm(go);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { err.innerHTML = '<div class="msg-err">Please enter a valid email</div>'; return; }
+    Object.assign(RD, { name:n, email:e, pass:p, conf:c }); RS++; _renderRegisterStep(wrap, go);
 
   } else if (RS === 2) {
     const o = document.getElementById('r-occ').value;
     if (!o) { err.innerHTML = '<div class="msg-err">Please select your occupation</div>'; return; }
     Object.assign(RD, { phone: document.getElementById('r-phone').value.trim(), occ:o });
-    RS++; _renderAuthForm(go);
+    RS++; _renderRegisterStep(wrap, go);
 
   } else {
     if (!document.getElementById('r-consent').checked) {
-      err.innerHTML = '<div class="msg-err">Please accept the privacy policy</div>'; return;
+      err.innerHTML = '<div class="msg-err">Please accept the privacy policy to continue</div>'; return;
     }
+    Object.assign(RD, { upiApp: document.getElementById('r-upi').value, password: RD.pass });
     const user = doRegister(RD);
     if (!user) return;
-    toast('🎉 Account created!', 'ok');
-    setTimeout(() => go('dashboard'), 150);
+    setTimeout(() => go('dashboard'), 1000);
   }
 }
 
 function renderDashboard(go) {
   const u = DB.me();
   if (!u) { go('login'); return; }
-  const s = u.score, c = scoreColor(s), tier = scoreTier(s);
+  const s = u.score, c = scoreColor(s), tier = scoreTier(s), pct = scorePct(s);
 
   document.getElementById('app').innerHTML = `
   <div class="page-enter" style="padding:28px clamp(16px,4vw,28px) 60px; max-width:1100px; margin:0 auto;">
-    <div style="margin-bottom:28px;">
-      <h1 class="font-display font-extrabold text-ink mb-1" style="font-size:clamp(22px,4vw,30px);">
-        Hi, ${escapeHTML(u.name).split(' ')[0]} 👋
-      </h1>
-      <p style="font-size:14px; color:#8c7d6a;">${escapeHTML(u.email)}</p>
-    </div>
-
-    <div class="cdna-card" style="padding:28px; margin-bottom:20px; border-top:3px solid ${c};">
-      <div style="text-align:center;">
-        ${s ? `
-        <div style="font-size:48px; margin-bottom:8px;">🎯</div>
-        <div style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#8c7d6a; margin-bottom:6px;">YOUR CREDITDNA SCORE</div>
-        <div class="font-display font-extrabold" style="font-size:68px; color:${c}; line-height:1;">${s}</div>
-        <div class="badge badge-green" style="margin:10px auto; display:inline-flex;">${tier}</div>` : `
-        <div style="font-size:48px; margin-bottom:16px;">📄</div>
-        <h3 class="font-display font-bold text-ink mb-3" style="font-size:20px;">No score yet</h3>
-        <p style="color:#8c7d6a; font-size:14px; margin-bottom:20px;">Upload your UPI statement to generate your score</p>
-        <button class="btn-primary" onclick="window._go('check')">Generate Score →</button>`}
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:26px;flex-wrap:wrap;gap:14px;">
+      <div>
+        <h1 class="font-display font-extrabold text-ink mb-1" style="font-size:clamp(22px,4vw,30px);">
+          Hi, ${escapeHTML(u.name).split(' ')[0]} 👋
+        </h1>
+        <p style="font-size:14px;color:#8c7d6a;">${escapeHTML(u.email)}</p>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn-primary btn-sm" onclick="window._go('check')">Check Score</button>
+        <button class="btn-outline btn-sm" onclick="window._go('logout')">Logout</button>
       </div>
     </div>
 
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-      <button class="btn-primary" onclick="window._go('check')">Upload PDF & Calculate</button>
-      <button class="btn-outline" onclick="window._logout()">Sign Out</button>
+    <div class="cdna-card" style="padding:28px;border-top:3px solid ${c};">
+      <div style="display:flex;gap:28px;align-items:center;flex-wrap:wrap;">
+        <div style="text-align:center;flex-shrink:0;">
+          <svg width="120" height="120" viewBox="0 0 120 120" style="margin:0 auto;">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#f5f0e8" stroke-width="8"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="${c}" stroke-width="8"
+              stroke-dasharray="${Math.PI * 2 * 52}"
+              stroke-dashoffset="${Math.PI * 2 * 52 * (1 - (s ? pct/100 : 0))}"
+              stroke-linecap="round"
+              transform="rotate(-90 60 60)"
+              style="transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);"/>
+            </svg>
+            <div style="margin-top:-100px;text-align:center;position:relative;z-index:1;">
+              <div class="font-display font-extrabold" style="font-size:32px;color:${c};line-height:1;">${s || '—'}</div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8c7d6a;margin-top:4px;text-transform:uppercase;">${tier}</div>
+            </div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          ${s ? `<p style="font-size:14px;color:#4a3f30;margin-bottom:16px;">Your score is <strong style="color:${c};">${tier}</strong> (${s}/900)</p>` : `
+          <div style="text-align:center;padding:20px 0;">
+            <div style="font-size:32px;margin-bottom:12px;">🎯</div>
+            <h3 class="font-display font-bold text-ink mb-2" style="font-size:16px;">No score yet</h3>
+            <p style="color:#8c7d6a;font-size:13px;">Answer 5 questions or upload your UPI statement to generate your score</p>
+            <button class="btn-primary btn-sm" style="margin-top:12px;" onclick="window._go('check')">Generate Score →</button>
+          </div>`}
+        </div>
+      </div>
     </div>
   </div>`;
 }
 
 function renderCheck(go) {
   const u = DB.me();
-  if (!u) { 
-    console.log('No user found, redirecting to login');
-    go('login'); 
-    return; 
-  }
+  if (!u) { go('login'); return; }
 
   document.getElementById('app').innerHTML = `
   <div class="page-enter" style="padding:28px clamp(16px,4vw,28px) 60px; max-width:720px; margin:0 auto;">
-    <div style="text-align:center; margin-bottom:32px;">
-      <span class="label">Check Your Score</span>
+    <div style="text-align:center;margin-bottom:32px;">
+      <span class="label">Score Check</span>
       <h1 class="font-display font-extrabold text-ink mb-3" style="font-size:clamp(24px,5vw,36px);">Generate Your CreditDNA Score</h1>
-      <p style="font-size:15px; color:#4a3f30; line-height:1.7; max-width:520px; margin:0 auto;">
-        Upload your UPI statement PDF (GPay, PhonePe, Paytm, BHIM). We extract and analyse it entirely on your device.
+      <p style="font-size:15px;color:#4a3f30;line-height:1.7;max-width:520px;margin:0 auto;">
+        Upload your UPI transaction PDF or answer questions manually — we analyse it entirely on your device.
       </p>
     </div>
 
-    <div style="display:flex; align-items:flex-start; gap:12px; background:#e8f5ef; border:1px solid rgba(15,126,90,.3); border-radius:14px; padding:16px; margin-bottom:28px;">
-      <span style="font-size:22px; flex-shrink:0;">🔒</span>
+    <div style="display:flex;align-items:flex-start;gap:12px;background:#e8f5ef;border:1px solid rgba(15,126,90,.3);border-radius:14px;padding:16px;margin-bottom:28px;">
+      <span style="font-size:22px;flex-shrink:0;">🔒</span>
       <div>
-        <div style="font-size:13px; font-weight:700; color:#0f7e5a; margin-bottom:4px;">100% On-Device Processing</div>
-        <div style="font-size:13px; color:#4a3f30; line-height:1.6;">No data is sent anywhere. Only your final score is saved.</div>
-      </div>
-    </div>
-
-    <div class="cdna-card" style="padding:24px; border-radius:20px; margin-bottom:20px;">
-      <div style="padding:0; margin-bottom:16px;">
-        <div style="font-size:13px; font-weight:700; color:#1a1208; margin-bottom:4px;">Upload your UPI Statement PDF</div>
-        <div style="font-size:12px; color:#8c7d6a;">Supported: GPay · PhonePe · Paytm · BHIM</div>
-      </div>
-      <div id="drop-zone" onclick="document.getElementById('pdf-input').click()"
-        style="border:2px dashed #e8e0d0; border-radius:14px; padding:40px 24px; text-align:center; cursor:pointer; background:#fffef9;">
-        <div style="font-size:40px; margin-bottom:12px;">📄</div>
-        <div class="font-display font-bold text-ink" style="font-size:16px; margin-bottom:6px;">Drop PDF here or click</div>
-        <div style="font-size:13px; color:#8c7d6a;">Max 10MB · PDF files only</div>
-      </div>
-      <input type="file" id="pdf-input" accept=".pdf" style="display:none;" onchange="window._handlePDFFile(this.files[0])">
-      <div id="file-info" style="display:none; margin-top:16px; background:#faf8f3; border-radius:10px; padding:14px; display:flex; align-items:center; gap:12px;">
-        <span style="font-size:24px;">📋</span>
-        <div style="flex:1; min-width:0;">
-          <div id="file-name" style="font-size:14px; font-weight:600; color:#1a1208;"></div>
-          <div id="file-size" style="font-size:12px; color:#8c7d6a;"></div>
+        <div style="font-size:13px;font-weight:700;color:#0f7e5a;margin-bottom:4px;">100% On-Device Processing</div>
+        <div style="font-size:13px;color:#4a3f30;line-height:1.6;">
+          Your PDF or answers are processed by your browser's PDF.js library. No data is sent anywhere.
         </div>
-        <button onclick="window._clearPDF()" style="font-size:18px; background:none; border:none; cursor:pointer; color:#8c7d6a;">✕</button>
       </div>
     </div>
 
-    <div id="ocr-status" style="display:none; margin-bottom:20px;"></div>
-    <div id="txn-preview" style="display:none; margin-bottom:20px;"></div>
+    <div class="cdna-card" style="padding:0;border-radius:20px;overflow:hidden;margin-bottom:20px;">
+      <div style="padding:20px 24px;border-bottom:1px solid #e8e0d0;background:#faf8f3;">
+        <div style="font-size:13px;font-weight:700;color:#1a1208;margin-bottom:4px;">Step 1 — Upload your UPI Statement PDF</div>
+        <div style="font-size:12px;color:#8c7d6a;">Supported: GPay · PhonePe · Paytm · BHIM · Any UPI bank</div>
+      </div>
+      <div style="padding:24px;">
+        <div id="drop-zone" onclick="document.getElementById('pdf-input').click()"
+          style="border:2px dashed #e8e0d0;border-radius:14px;padding:40px 24px;text-align:center;cursor:pointer;transition:all .2s;background:#fffef9;"
+          ondragover="event.preventDefault();this.style.borderColor='#d4500f';this.style.background='#fff0e8';"
+          ondragleave="this.style.borderColor='#e8e0d0';this.style.background='#fffef9';"
+          ondrop="event.preventDefault();this.style.borderColor='#e8e0d0';this.style.background='#fffef9';window._handlePDFDrop(event);">
+          <div style="font-size:40px;margin-bottom:12px;">📄</div>
+          <div class="font-display font-bold text-ink" style="font-size:16px;margin-bottom:6px;">Drop your PDF here or click to browse</div>
+          <div style="font-size:13px;color:#8c7d6a;">Max 10MB · PDF files only</div>
+        </div>
+        <input type="file" id="pdf-input" accept=".pdf,application/pdf" style="display:none;" onchange="window._handlePDFFile(this.files[0])">
+        <div id="file-info" style="display:none;margin-top:16px;background:#faf8f3;border-radius:10px;padding:14px;display:none;align-items:center;gap:12px;">
+          <span style="font-size:24px;">📋</span>
+          <div style="flex:1;min-width:0;">
+            <div id="file-name" style="font-size:14px;font-weight:600;color:#1a1208;"></div>
+            <div id="file-size" style="font-size:12px;color:#8c7d6a;"></div>
+          </div>
+          <button onclick="window._clearPDF()" style="font-size:18px;background:none;border:none;cursor:pointer;color:#8c7d6a;padding:4px;">✕</button>
+        </div>
+      </div>
+    </div>
 
-    <div id="calc-section" style="display:none;">
+    <div id="ocr-status" style="display:none;margin-bottom:20px;"></div>
+    <div id="txn-preview" style="display:none;margin-bottom:20px;"></div>
+    <div id="calc-section" style="display:none;margin-bottom:20px;">
       <button class="btn-primary btn-full btn-lg" style="border-radius:14px;" onclick="window._runScoring()">
         Calculate My Score →
       </button>
     </div>
 
-    <div id="score-result" style="display:none;"></div>
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #e8e0d0;text-align:center;">
+      <div style="font-size:13px;color:#8c7d6a;margin-bottom:8px;">Don't have a PDF handy?</div>
+      <button class="btn-ghost btn-sm" onclick="window._showManualQuestionnaire()" style="color:#d4500f;font-size:13px;">
+        Use manual questionnaire instead →
+      </button>
+    </div>
+
+    <div id="manual-section" style="display:none;margin-top:20px;"></div>
   </div>`;
 
   let selectedFile = null;
-  window._extractedTxns = [];
+  let extractedTxns = [];
+
+  window._handlePDFDrop = (e) => {
+    const file = e.dataTransfer.files[0];
+    if (file) window._handlePDFFile(file);
+  };
+
+  window._clearPDF = () => {
+    selectedFile = null;
+    extractedTxns = [];
+    document.getElementById('file-info').style.display = 'none';
+    document.getElementById('drop-zone').style.display = 'block';
+    document.getElementById('txn-preview').style.display = 'none';
+    document.getElementById('calc-section').style.display = 'none';
+    document.getElementById('pdf-input').value = '';
+  };
 
   window._handlePDFFile = async (file) => {
-    if (!file || file.type !== 'application/pdf') {
-      toast('Please upload a PDF file', 'err');
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      showStatus('error', '❌ Please upload a PDF file only');
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast('File too large — max 10MB', 'err');
+      showStatus('error', '❌ File too large — max 10MB');
       return;
     }
 
@@ -979,195 +779,205 @@ function renderCheck(go) {
     document.getElementById('file-name').textContent = file.name;
     document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
 
-    await extractPDFTransactions(file);
-  };
+    showStatus('loading', 'Reading PDF...', 'Extracting text from your statement');
 
-  window._clearPDF = () => {
-    selectedFile = null;
-    window._extractedTxns = [];
-    document.getElementById('file-info').style.display = 'none';
-    document.getElementById('drop-zone').style.display = 'block';
-    document.getElementById('txn-preview').style.display = 'none';
-    document.getElementById('calc-section').style.display = 'none';
-    document.getElementById('pdf-input').value = '';
-  };
+    try {
+      const pdfDoc = await pdfjs.getDocument(URL.createObjectURL(file)).promise;
+      let fullText = '';
+      
+      for (let i = 0; i < pdfDoc.numPages; i++) {
+        const page = await pdfDoc.getPage(i + 1);
+        const textContent = await page.getTextContent();
+        fullText += textContent.items.map(item => item.str).join(' ') + ' ';
+      }
 
-  window._runScoring = () => {
-    const txns = window._extractedTxns;
-    if (txns.length === 0) { toast('No transactions', 'err'); return; }
+      console.log('PDF Text:', fullText.substring(0, 300));
 
-    const income = txns.filter(t=>t.credit);
-    const debits = txns.filter(t=>!t.credit);
+      extractedTxns = parseUPITransactions(fullText);
+      console.log('Extracted:', extractedTxns.length, 'transactions');
 
-    const freqScore = Math.min(100, txns.length * 2);
-    const incomeAmts = income.map(t => t.amt);
-    const avgIncome = incomeAmts.length ? incomeAmts.reduce((a,b)=>a+b,0)/incomeAmts.length : 0;
-    const incomeCV = incomeAmts.length > 1
-      ? (Math.sqrt(incomeAmts.reduce((a,v)=>a+Math.pow(v-avgIncome,2),0)/incomeAmts.length) / (avgIncome||1)) * 100
-      : 50;
-    const incomeScore = Math.max(0, Math.min(100, 100 - incomeCV));
-    const merchants = new Set(debits.map(t=>t.merchant.toLowerCase()));
-    const diverseScore = Math.min(100, merchants.size * 8);
-    const regularScore = debits.length >= 5 ? Math.min(100, debits.length * 3) : 30;
-    const totalIncome = income.reduce((a,t)=>a+t.amt,0);
-    const totalSpend = debits.reduce((a,t)=>a+Math.abs(t.amt),0);
-    const ratioScore = totalIncome > 0 ? Math.min(100, (totalIncome / (totalSpend||1)) * 50) : 40;
+      if (extractedTxns.length === 0) {
+        showStatus('warn', '⚠️ Could not detect transactions in this PDF', 'Try the manual questionnaire below.');
+        return;
+      }
 
-    const weights = [0.2, 0.25, 0.2, 0.2, 0.15];
-    const signals = [freqScore, incomeScore, diverseScore, regularScore, ratioScore];
-    const weighted = signals.reduce((a,v,i) => a + v*weights[i], 0);
-    const score = Math.min(900, Math.max(300, Math.round(300 + (weighted/100)*600)));
+      showStatus('ok', '✅ Found ' + extractedTxns.length + ' transactions', 'Review below and click Calculate Score');
+      showTransactionPreview(extractedTxns);
+      document.getElementById('calc-section').style.display = 'block';
 
-    const c = scoreColor(score), tier = scoreTier(score), pct = scorePct(score);
-
-    const users = DB.users();
-    const idx = users.findIndex(u2 => u2.id === u.id);
-    if (idx > -1) {
-      users[idx].score = score;
-      users[idx].transactions = txns;
-      DB.save(users);
-      DB.setMe(users[idx]);
+    } catch (err) {
+      console.error('PDF error:', err);
+      showStatus('error', '❌ Could not read this PDF', 'Try the manual questionnaire below.');
     }
+  };
 
-    document.getElementById('calc-section').style.display = 'none';
-    document.getElementById('txn-preview').style.display = 'none';
-    document.getElementById('ocr-status').style.display = 'none';
-
-    const res = document.getElementById('score-result');
-    res.style.display = 'block';
-    res.innerHTML = `
-    <div class="cdna-card page-enter" style="padding:32px; border-radius:20px; text-align:center; border-top:3px solid ${c};">
-      <div style="font-size:11px; font-weight:700; letter-spacing:.1em; color:#8c7d6a; margin-bottom:16px;">YOUR CREDITDNA SCORE</div>
-      <div class="font-display font-extrabold" style="font-size:88px; color:${c}; line-height:1;" id="score-num">300</div>
-      <div class="badge" style="background:${c}18; color:${c}; margin:12px auto; display:inline-flex; font-size:14px;">${tier}</div>
-      <div class="progress-bar" style="margin:20px 0;"><div class="progress-fill" style="width:0%; background:${c};"></div></div>
-      <p style="font-size:13px; color:#8c7d6a; margin-bottom:20px;">Based on ${txns.length} real transactions</p>
-      <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-        <button class="btn-primary" onclick="window._go('dashboard')">View Dashboard →</button>
+  function showStatus(type, msg, sub = '') {
+    const el = document.getElementById('ocr-status');
+    const colors = { loading: '#1d5fa8', ok: '#0f7e5a', error: '#c0392b', warn: '#b45309' };
+    const bgs    = { loading: '#e8f0fb', ok: '#e8f5ef', error: '#fdecea', warn: '#fff8e6' };
+    const c = colors[type] || colors.loading;
+    const bg = bgs[type] || bgs.loading;
+    el.style.display = 'block';
+    el.innerHTML = `
+    <div style="background:${bg};border:1px solid ${c}30;border-radius:12px;padding:14px 16px;display:flex;align-items:flex-start;gap:10px;">
+      ${type === 'loading' ? `<div style="width:16px;height:16px;border:2px solid ${c};border-top-color:transparent;border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0;margin-top:2px;"></div>` : ''}
+      <div>
+        <div style="font-size:13px;font-weight:600;color:${c};">${msg}</div>
+        ${sub ? `<div style="font-size:12px;color:${c};opacity:.7;margin-top:2px;">${sub}</div>` : ''}
       </div>
     </div>`;
+  }
 
-    let current = 300;
-    const el = document.getElementById('score-num');
-    const timer = setInterval(() => {
-      current = Math.min(score, current + Math.ceil((score - current)/6) + 3);
-      if (el) el.innerHTML = current;
-      if (current >= score) clearInterval(timer);
-    }, 25);
+  function parseUPITransactions(text) {
+    const txns = [];
+    const datePatterns = [
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/,
+      /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/,
+    ];
+    const creditWords = /credit|received|refund|cashback|salary|income|deposit|transfer in|incoming|topup|add money|cr\b/i;
+    const debitWords = /debit|paid|payment|sent|purchase|transfer out|outgoing|withdrawal|dr\b/i;
+
+    const lines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.length < 5) continue;
+
+      let dateMatch = null, dateStr = '';
+      for (const pattern of datePatterns) {
+        const match = line.match(pattern);
+        if (match) { dateMatch = match; dateStr = match[0]; break; }
+      }
+      if (!dateMatch) continue;
+
+      const amounts = [...line.matchAll(/[₹Rs]?\s*([\d,]+(?:\.\d{1,2})?)/g)];
+      if (amounts.length === 0) continue;
+
+      const rawAmt = parseFloat(amounts[amounts.length - 1][1].replace(/,/g, ''));
+      if (isNaN(rawAmt) || rawAmt < 1 || rawAmt > 10000000) continue;
+
+      const isCredit = creditWords.test(line) && !debitWords.test(line);
+      const merchant = line.replace(dateStr, '').replace(/[₹Rs]?[\d,]+(?:\.\d{1,2})?/g, '').substring(0, 40).trim() || 'UPI Transaction';
+
+      txns.push({ date: dateStr, merchant, amt: isCredit ? rawAmt : -rawAmt, credit: isCredit });
+    }
+
+    return txns.slice(0, 200);
+  }
+
+  function showTransactionPreview(txns) {
+    const income = txns.filter(t=>t.credit).reduce((a,t)=>a+t.amt,0);
+    const spend  = txns.filter(t=>!t.credit).reduce((a,t)=>a+Math.abs(t.amt),0);
     
-    setTimeout(() => {
-      const fill = document.querySelector('.progress-fill');
-      if (fill) fill.style.width = pct + '%';
-    }, 100);
+    const el = document.getElementById('txn-preview');
+    el.style.display = 'block';
+    el.innerHTML = `
+    <div class="cdna-card" style="padding:16px 20px;background:#faf8f3;">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:#1a1208;">${txns.length} transactions detected</div>
+        <div style="display:flex;gap:16px;">
+          <span style="font-size:12px;color:#0f7e5a;font-weight:600;">+₹${income.toLocaleString('en-IN')}</span>
+          <span style="font-size:12px;color:#c0392b;font-weight:600;">−₹${spend.toLocaleString('en-IN')}</span>
+        </div>
+      </div>
+    </div>`;
+  }
 
-    toast('🎉 Score calculated!', 'ok');
+  window._runScoring = () => {
+    if (!extractedTxns || extractedTxns.length === 0) {
+      toast('No transactions found. Please upload a valid PDF.', 'err');
+      return;
+    }
+
+    const score = calculateScore(extractedTxns);
+    const updatedUser = DB.updateUser({ id: u.id, score, transactions: extractedTxns });
+    
+    if (updatedUser) {
+      toast(`🎉 Your score is ${score}!`, 'ok');
+      setTimeout(() => go('dashboard'), 1500);
+    }
+  };
+
+  function calculateScore(txns) {
+    let score = 300;
+
+    // Frequency signal
+    score += Math.min(txns.length * 10, 150);
+
+    // Income stability
+    const income = txns.filter(t => t.credit).length;
+    score += Math.min(income * 8, 100);
+
+    // Merchant diversity
+    const merchants = new Set(txns.map(t => t.merchant)).size;
+    score += Math.min(merchants * 15, 100);
+
+    // Payment consistency
+    const payments = txns.filter(t => !t.credit).length;
+    score += Math.min(payments * 5, 80);
+
+    // Volume signal
+    const totalVolume = txns.reduce((a, t) => a + Math.abs(t.amt), 0);
+    score += Math.min(totalVolume / 100000, 70);
+
+    return Math.min(Math.max(Math.round(score), 300), 900);
+  }
+
+  window._showManualQuestionnaire = () => {
+    document.getElementById('drop-zone').style.display = 'none';
+    document.getElementById('manual-section').style.display = 'block';
+    document.getElementById('manual-section').innerHTML = `
+    <div class="cdna-card" style="padding:24px;">
+      <h3 class="font-display font-bold text-ink mb-4" style="font-size:18px;">📋 Manual Questionnaire</h3>
+      <div class="field"><label>Monthly UPI Transactions *</label>
+        <input id="m-txn-count" type="number" placeholder="e.g., 50" min="1" max="1000">
+      </div>
+      <div class="field"><label>Average Monthly Income (₹) *</label>
+        <input id="m-income" type="number" placeholder="e.g., 50000" min="0">
+      </div>
+      <div class="field"><label>Number of Different Merchants/Categories</label>
+        <input id="m-merchants" type="number" placeholder="e.g., 10" min="1" max="100">
+      </div>
+      <div class="field"><label>Monthly Spending (₹) *</label>
+        <input id="m-spend" type="number" placeholder="e.g., 30000" min="0">
+      </div>
+      <div class="field"><label>Months Using UPI *</label>
+        <input id="m-months" type="number" placeholder="e.g., 24" min="1" max="120">
+      </div>
+      <button class="btn-primary btn-full btn-lg" style="border-radius:12px;" onclick="window._submitManualScore()">
+        Calculate My Score →
+      </button>
+    </div>`;
+
+    window._submitManualScore = () => {
+      const txnCount = parseInt(document.getElementById('m-txn-count').value) || 0;
+      const income = parseFloat(document.getElementById('m-income').value) || 0;
+      const merchants = parseInt(document.getElementById('m-merchants').value) || 0;
+      const spend = parseFloat(document.getElementById('m-spend').value) || 0;
+      const months = parseInt(document.getElementById('m-months').value) || 0;
+
+      if (!txnCount || !income || !merchants || !spend || !months) {
+        toast('Please fill in all fields', 'err');
+        return;
+      }
+
+      let score = 300;
+      score += Math.min(txnCount * 8, 150);
+      score += (income > 20000 ? 100 : Math.min(income / 200, 100));
+      score += Math.min(merchants * 12, 100);
+      score += (spend > 10000 ? 80 : Math.min(spend / 125, 80));
+      score += Math.min(months * 3, 70);
+
+      score = Math.min(Math.max(Math.round(score), 300), 900);
+
+      const updatedUser = DB.updateUser({ id: u.id, score, transactions: [] });
+      if (updatedUser) {
+        toast(`🎉 Your score is ${score}!`, 'ok');
+        setTimeout(() => go('dashboard'), 1500);
+      }
+    };
   };
 }
-
-// ══════════════════════════════════════════════════════
-// MOBILE MENU
-// ══════════════════════════════════════════════════════
-
-let mmOpen = false;
-
-function toggleMM() {
-  mmOpen = !mmOpen;
-  const el = document.getElementById('mobile-menu');
-  if (el) el.classList.toggle('open', mmOpen);
-}
-
-function closeMM() {
-  mmOpen = false;
-  const el = document.getElementById('mobile-menu');
-  if (el) el.classList.remove('open');
-}
-
-window.closeMM = closeMM;
-window._toggleMM = toggleMM;
-
-document.addEventListener('click', e => {
-  if (mmOpen && !e.target.closest('#mobile-menu') && !e.target.closest('#hb')) closeMM();
-});
-
-// ══════════════════════════════════════════════════════
-// ROUTER
-// ══════════════════════════════════════════════════════
-
-let PAGE = 'landing';
-
-const PAGES = {
-  landing: go => renderLanding(go),
-  login: go => renderLogin(go),
-  register: go => renderRegister(go),
-  dashboard: go => renderDashboard(go),
-  check: go => renderCheck(go),
-};
-
-function go(page) {
-  const protected_ = ['dashboard','check'];
-  if (protected_.includes(page)) {
-    const user = DB.me();
-    if (!user) {
-      toast('Please sign in first', 'err');
-      page = 'login';
-    }
-  }
-
-  PAGE = page;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  // Render nav
-  const logo = document.getElementById('logo-btn');
-  if (logo) logo.onclick = () => go('landing');
-
-  const navLinks = document.getElementById('nav-links');
-  if (navLinks) {
-    const user = DB.me();
-    let h = '';
-    if (user) {
-      h += `<button class="nav-link" onclick="window._go('dashboard')">Dashboard</button>`;
-      h += `<button class="nav-link" onclick="window._go('check')">Check Score</button>`;
-      h += `<div class="user-avatar">${user.name.charAt(0).toUpperCase()}</div>`;
-      h += `<button class="btn-danger btn-sm" onclick="window._logout()">Sign out</button>`;
-    } else {
-      h += `<button class="nav-link" onclick="window._go('login')">Sign In</button>`;
-      h += `<button class="btn-primary btn-sm" onclick="window._go('register')">Get Started</button>`;
-    }
-    navLinks.innerHTML = h;
-  }
-
-  // Render mobile menu
-  const mm = document.getElementById('mobile-menu');
-  if (mm) {
-    const user = DB.me();
-    let h = `<button class="mm-item" onclick="window._go('landing'); window.closeMM()">🏠 Home</button>`;
-    if (user) {
-      h += `<button class="mm-item" onclick="window._go('dashboard'); window.closeMM()">📊 Dashboard</button>`;
-      h += `<button class="mm-item" onclick="window._go('check'); window.closeMM()">🎯 Check Score</button>`;
-      h += `<div class="mm-div"></div>`;
-      h += `<button class="mm-item" style="color:#c0392b" onclick="window._logout(); window.closeMM()">🚪 Sign Out</button>`;
-    } else {
-      h += `<div class="mm-div"></div>`;
-      h += `<button class="mm-item" onclick="window._go('login'); window.closeMM()">🔑 Sign In</button>`;
-      h += `<button class="btn-primary btn-full" style="margin-top:8px;" onclick="window._go('register'); window.closeMM()">Get Started</button>`;
-    }
-    mm.innerHTML = h;
-  }
-
-  const render = PAGES[page] || PAGES.landing;
-  render(go);
-}
-
-window._go = go;
-window._logout = () => { doLogout(); go('landing'); };
-
-// ══════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════
-
-document.addEventListener('DOMContentLoaded', () => {
-  go('landing');
-});
 
 </script>
 </body>
