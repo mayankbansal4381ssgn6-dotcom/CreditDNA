@@ -1661,65 +1661,89 @@ function renderCheck(go) {
     <style>@keyframes spin{to{transform:rotate(360deg)}}</style>`;
   }
 
-  // ── PDF Text Extraction using PDF.js ─────────────────
+  // ── PDF Text Extraction (no worker, no CORS) ────────
   async function extractPDFTransactions(file) {
-    showStatus('loading', 'Reading PDF...', 'Loading PDF.js library');
+    showStatus('loading', 'Reading PDF...', 'Extracting text from your statement');
 
     try {
-      // Dynamically load PDF.js from CDN
-      if (!window.pdfjsLib) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script');
-          // Use 2.x — more stable, better CDN support
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
-          script.onload = resolve;
-          script.onerror = () => reject(new Error('Failed to load PDF.js'));
-          document.head.appendChild(script);
-        });
-        // Disable worker entirely — avoids all CORS issues with worker CDN
-        // Safe for files under ~20MB processed in-browser
-        // Blob worker = no CORS, works on any host including Vercel
-        const workerBlob = new Blob([''], { type: 'application/javascript' });
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
-      }
-
-      showStatus('loading', 'Extracting text from PDF...', 'This runs entirely in your browser');
-
       const arrayBuffer = await file.arrayBuffer();
-      const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      const uint8 = new Uint8Array(arrayBuffer);
 
-      let fullText = '';
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        fullText += content.items.map(item => item.str).join(' ') + '\n';
+      // ── Method 1: Extract raw text directly from PDF binary ──
+      // PDFs store text as plain strings inside stream objects.
+      // We decode the binary and pull out readable characters.
+      // This works for all text-based (non-scanned) PDFs without any library.
+      let rawText = '';
+      const decoder = new TextDecoder('latin1');
+      const pdfStr  = decoder.decode(uint8);
+
+      // Extract text from PDF text streams (BT...ET blocks)
+      const btBlocks = pdfStr.matchAll(/BT([\s\S]{1,2000}?)ET/g);
+      for (const block of btBlocks) {
+        // Pull strings from Tj and TJ operators
+        const tjMatches = block[1].matchAll(/\(([^)]{1,200})\)\s*Tj/g);
+        for (const m of tjMatches) rawText += m[1] + ' ';
+
+        const tjArrMatches = block[1].matchAll(/\[([^\]]{1,500})\]\s*TJ/g);
+        for (const m of tjArrMatches) {
+          const strs = m[1].matchAll(/\(([^)]{1,200})\)/g);
+          for (const s of strs) rawText += s[1] + ' ';
+        }
       }
 
-      showStatus('loading', `Analysing ${pdf.numPages} page(s)...`, 'Identifying transactions');
+      // Also try hex-encoded strings <AABBCC>
+      const hexMatches = pdfStr.matchAll(/<([0-9A-Fa-f]{4,200})>/g);
+      for (const m of hexMatches) {
+        try {
+          const hex = m[1];
+          let str = '';
+          for (let i = 0; i < hex.length; i += 2) {
+            const code = parseInt(hex.slice(i, i+2), 16);
+            if (code > 31 && code < 127) str += String.fromCharCode(code);
+          }
+          if (str.length > 2) rawText += str + ' ';
+        } catch(e) {}
+      }
 
-      // Parse transactions from extracted text
-      extractedTxns = parseUPITransactions(fullText);
+      // Clean up PDF escape sequences
+      // Clean PDF text - keep only printable ASCII + newlines
+      rawText = rawText.split('').map(c => {
+        const code = c.charCodeAt(0);
+        return (code >= 32 && code <= 126) || code === 10 ? c : ' ';
+      }).join('').replace(/  +/g, ' ');
+
+      showStatus('loading', 'Analysing transactions...', 'Almost done');
+
+      if (rawText.trim().length < 20) {
+        showStatus('warn',
+          '⚠️ This appears to be a scanned/image PDF',
+          'Text could not be extracted. Please use the manual questionnaire below.');
+        return;
+      }
+
+      extractedTxns = parseUPITransactions(rawText);
 
       if (extractedTxns.length === 0) {
+        // Show raw text snippet to help debug
+        const snippet = rawText.substring(0, 200).replace(/</g,'&lt;');
         showStatus('warn',
-          '⚠️ Could not detect transactions automatically',
-          'Your PDF may be scanned/image-based. Try the manual questionnaire below.');
-        document.getElementById('calc-section').style.display = 'none';
+          '⚠️ Could not detect transactions in this PDF',
+          'Extracted text: "' + snippet + '..." — Try the manual questionnaire below.');
         return;
       }
 
       showStatus('ok',
-        `✅ Found ${extractedTxns.length} transactions`,
-        'Review below then calculate your score');
+        '✅ Found ' + extractedTxns.length + ' transactions',
+        'Review below and click Calculate Score');
 
       showTransactionPreview(extractedTxns);
       document.getElementById('calc-section').style.display = 'block';
 
     } catch (err) {
-      console.error('PDF extraction error:', err);
+      console.error('PDF error:', err);
       showStatus('error',
         '❌ Could not read this PDF',
-        'Try a different PDF or use the manual questionnaire below.');
+        (err && err.message ? err.message.substring(0,100) : 'Unknown error') + ' — Try the manual questionnaire below.');
     }
   }
 
