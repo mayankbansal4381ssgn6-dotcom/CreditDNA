@@ -32,6 +32,7 @@ tailwind.config = {
 }
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
 <style>
 /* ══════════════════════════════════════
    CreditDNA — Custom Styles
@@ -1664,33 +1665,29 @@ function renderCheck(go) {
   // ── PDF Text Extraction (no worker, no CORS) ────────
   async function extractPDFTransactions(file) {
     showStatus('loading', 'Reading PDF...', 'Extracting text from your statement');
-
+ 
     try {
       const arrayBuffer = await file.arrayBuffer();
       const uint8 = new Uint8Array(arrayBuffer);
-
+ 
       // ── Method 1: Extract raw text directly from PDF binary ──
-      // PDFs store text as plain strings inside stream objects.
-      // We decode the binary and pull out readable characters.
-      // This works for all text-based (non-scanned) PDFs without any library.
       let rawText = '';
       const decoder = new TextDecoder('latin1');
       const pdfStr  = decoder.decode(uint8);
-
+ 
       // Extract text from PDF text streams (BT...ET blocks)
       const btBlocks = pdfStr.matchAll(/BT([\s\S]{1,2000}?)ET/g);
       for (const block of btBlocks) {
-        // Pull strings from Tj and TJ operators
         const tjMatches = block[1].matchAll(/\(([^)]{1,200})\)\s*Tj/g);
         for (const m of tjMatches) rawText += m[1] + ' ';
-
+ 
         const tjArrMatches = block[1].matchAll(/\[([^\]]{1,500})\]\s*TJ/g);
         for (const m of tjArrMatches) {
           const strs = m[1].matchAll(/\(([^)]{1,200})\)/g);
           for (const s of strs) rawText += s[1] + ' ';
         }
       }
-
+ 
       // Also try hex-encoded strings <AABBCC>
       const hexMatches = pdfStr.matchAll(/<([0-9A-Fa-f]{4,200})>/g);
       for (const m of hexMatches) {
@@ -1704,41 +1701,46 @@ function renderCheck(go) {
           if (str.length > 2) rawText += str + ' ';
         } catch(e) {}
       }
-
-      // Clean up PDF escape sequences
+ 
       // Clean PDF text - keep only printable ASCII + newlines
       rawText = rawText.split('').map(c => {
         const code = c.charCodeAt(0);
         return (code >= 32 && code <= 126) || code === 10 ? c : ' ';
       }).join('').replace(/  +/g, ' ');
-
+ 
+      // ═══ DEBUG: Log to console ═══
+      console.log('=== PDF EXTRACTION DEBUG ===');
+      console.log('Raw text length:', rawText.trim().length);
+      console.log('First 300 chars:', rawText.substring(0, 300));
+      console.log('=== END DEBUG ===');
+ 
       showStatus('loading', 'Analysing transactions...', 'Almost done');
-
+ 
       if (rawText.trim().length < 20) {
         showStatus('warn',
           '⚠️ This appears to be a scanned/image PDF',
-          'Text could not be extracted. Please use the manual questionnaire below.');
+          'Text could not be extracted. Check browser console (F12) for details.');
         return;
       }
-
+ 
       extractedTxns = parseUPITransactions(rawText);
-
+ 
+      console.log(`✓ Extracted ${extractedTxns.length} transactions`);
+ 
       if (extractedTxns.length === 0) {
-        // Show raw text snippet to help debug
-        const snippet = rawText.substring(0, 200).replace(/</g,'&lt;');
         showStatus('warn',
           '⚠️ Could not detect transactions in this PDF',
-          'Extracted text: "' + snippet + '..." — Try the manual questionnaire below.');
+          'Your PDF format may be different. Try the manual questionnaire or check browser console (F12).');
         return;
       }
-
+ 
       showStatus('ok',
         '✅ Found ' + extractedTxns.length + ' transactions',
         'Review below and click Calculate Score');
-
+ 
       showTransactionPreview(extractedTxns);
       document.getElementById('calc-section').style.display = 'block';
-
+ 
     } catch (err) {
       console.error('PDF error:', err);
       showStatus('error',
@@ -1746,98 +1748,133 @@ function renderCheck(go) {
         (err && err.message ? err.message.substring(0,100) : 'Unknown error') + ' — Try the manual questionnaire below.');
     }
   }
-
-  // ── UPI Transaction Parser ────────────────────────────
+ 
+  // ── IMPROVED UPI Transaction Parser with flexible patterns ────────────────────────────
   function parseUPITransactions(text) {
     const txns = [];
     const lines = text.split(/\n|\r/).map(l => l.trim()).filter(Boolean);
-
-    // Common UPI PDF patterns
-    // Matches lines with: date, description, amount (debit or credit)
-    // GPay / PhonePe / BHIM format variations
-    const patterns = [
-      // DD/MM/YYYY or DD-MM-YYYY or DD MMM YYYY
-      /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}|\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{4})/i,
+ 
+    console.log(`📊 Parsing ${lines.length} lines of PDF text...`);
+ 
+    // ════════════════════════════════════════════════════════════════
+    // FLEXIBLE DATE PATTERNS (handles multiple formats)
+    // ════════════════════════════════════════════════════════════════
+    const datePatterns = [
+      /(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})/, // DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY
+      /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/, // YYYY-MM-DD
+      /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{2,4})/i, // 15 Jan 2024
+      /(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{2})/i, // 15 Jan 24
     ];
-
-    // Amount pattern: ₹1,234.56 or 1234.56 Dr/Cr or -1234.56
-    const amtPattern = /[₹Rs\.]?\s*([\d,]+(?:\.\d{2})?)\s*(?:Dr|Cr|CR|DR)?/i;
-    const creditWords = /credit|received|refund|cashback|salary|income|cr\b/i;
-    const debitWords  = /debit|paid|payment|sent|purchase|dr\b/i;
-
+ 
+    // Credit/Debit detection keywords
+    const creditWords = /credit|received|refund|cashback|salary|income|deposit|transfer in|incoming|topup|add money|cr\b|\\bcr\\b/i;
+    const debitWords = /debit|paid|payment|sent|purchase|transfer out|outgoing|withdrawal|dr\b|\\bdr\\b/i;
+ 
+    // ════════════════════════════════════════════════════════════════
+    // MAIN PARSING LOOP
+    // ════════════════════════════════════════════════════════════════
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      const hasDate = patterns[0].test(line);
-      const hasAmt  = /[\d,]{3,}/.test(line);
-
-      if (!hasDate || !hasAmt) continue;
-
-      // Extract date
-      const dateMatch = line.match(patterns[0]);
-      const date = dateMatch ? dateMatch[0].substring(0,11) : '';
-
-      // Extract amount
-      const amtMatches = [...line.matchAll(/[\d,]+(?:\.\d{2})?/g)];
-      if (amtMatches.length === 0) continue;
-
-      // Take the last number on the line as amount (common in bank statements)
-      const rawAmt = parseFloat(amtMatches[amtMatches.length - 1][0].replace(/,/g, ''));
-      if (isNaN(rawAmt) || rawAmt === 0) continue;
-
-      // Determine credit/debit
-      const isCredit = creditWords.test(line) || /\bCr\b|\bCR\b/.test(line);
-      const isDebit  = debitWords.test(line)  || /\bDr\b|\bDR\b/.test(line);
-      const credit   = isCredit && !isDebit;
-
-      // Extract merchant name: take words between date and amount
+ 
+      // Skip very short lines
+      if (line.length < 5) continue;
+ 
+      // ── Try to find a date ──
+      let dateMatch = null;
+      let dateStr = '';
+ 
+      for (const pattern of datePatterns) {
+        const match = line.match(pattern);
+        if (match) {
+          dateMatch = match;
+          dateStr = match[0];
+          break;
+        }
+      }
+ 
+      // If no date found, skip this line
+      if (!dateMatch) continue;
+ 
+      // ── Try to find amount(s) ──
+      const amounts = [...line.matchAll(/[₹Rs]?\s*([\d,]+(?:\.\d{1,2})?)/g)];
+      if (amounts.length === 0) continue;
+ 
+      // Use the LAST amount (usually the transaction amount in statements)
+      const rawAmt = parseFloat(amounts[amounts.length - 1][1].replace(/,/g, ''));
+ 
+      // Amount must be valid (between 1 and 10 million)
+      if (isNaN(rawAmt) || rawAmt < 1 || rawAmt > 10000000) continue;
+ 
+      // ── Determine if credit or debit ──
+      const isCredit = creditWords.test(line) && !debitWords.test(line);
+      const isDebit = debitWords.test(line) && !creditWords.test(line);
+      
+      // If neither keyword found, assume debit (payment)
+      const credit = isCredit || (!isCredit && !isDebit ? false : isCredit);
+ 
+      // ── Extract merchant name ──
       let merchant = line
-        .replace(patterns[0], '')
-        .replace(/[₹Rs]?\s*[\d,]+(?:\.\d{2})?\s*(?:Dr|Cr|CR|DR)?/gi, '')
+        .replace(dateStr, '') // Remove date
+        .replace(/[₹Rs]?\s*[\d,]+(?:\.\d{1,2})?/g, '') // Remove all amounts
+        .replace(/\b(?:credit|received|refund|cashback|salary|income|deposit|transfer|incoming|topup|add money|debit|paid|payment|sent|purchase|withdrawal|outgoing|cr|dr)\b/gi, '') // Remove keywords
         .replace(/\s+/g, ' ')
         .trim()
-        .substring(0, 40);
-
-      if (!merchant) merchant = 'UPI Transaction';
-
+        .substring(0, 50);
+ 
+      // If merchant is empty, use generic label
+      if (!merchant || merchant.length < 2) {
+        merchant = credit ? 'Income/Credit' : 'Payment/Debit';
+      }
+ 
       txns.push({
-        date:     date,
+        date: dateStr,
         merchant: merchant,
-        amt:      credit ? rawAmt : -rawAmt,
-        credit:   credit,
+        amt: credit ? rawAmt : -rawAmt,
+        credit: credit,
       });
+ 
+      console.log(`  ✓ ${dateStr} | ${merchant.substring(0,30)} | ₹${rawAmt} | ${credit ? '📥 CR' : '📤 DR'}`);
     }
-
-    // Fallback: if structured parsing got nothing, try a looser pass
+ 
+    // ════════════════════════════════════════════════════════════════
+    // FALLBACK: Loose parsing if structured parsing found nothing
+    // ════════════════════════════════════════════════════════════════
     if (txns.length === 0) {
+      console.log('⚠️ No transactions found with structured parsing, trying loose fallback...');
+      
       const looseAmt = /[₹\u20B9]?\s*([\d,]+(?:\.\d{1,2})?)/g;
       let match;
       let lineNum = 0;
+      
       for (const line of lines) {
         while ((match = looseAmt.exec(line)) !== null) {
           const amt = parseFloat(match[1].replace(/,/g,''));
           if (amt > 10 && amt < 10000000) {
             const credit = creditWords.test(line);
             txns.push({
-              date: `Line ${++lineNum}`,
-              merchant: line.substring(0, 35) || 'UPI Transaction',
+              date: `Entry ${++lineNum}`,
+              merchant: line.substring(0, 40) || 'UPI Transaction',
               amt: credit ? amt : -amt,
               credit,
             });
           }
         }
-        if (txns.length >= 200) break; // cap
+        if (txns.length >= 200) break;
       }
+      
+      console.log(`  Fallback found ${txns.length} transactions`);
     }
-
-    return txns.slice(0, 200); // max 200 transactions
+ 
+    console.log(`\n✅ Total transactions extracted: ${txns.length}`);
+    return txns.slice(0, 200);
   }
-
+ 
   // ── Transaction Preview ───────────────────────────────
   function showTransactionPreview(txns) {
     const income = txns.filter(t=>t.credit).reduce((a,t)=>a+t.amt,0);
     const spend  = txns.filter(t=>!t.credit).reduce((a,t)=>a+Math.abs(t.amt),0);
     const preview5 = txns.slice(0, 5);
-
+ 
     const el = document.getElementById('txn-preview');
     el.style.display = 'block';
     el.innerHTML = `
@@ -1864,7 +1901,6 @@ function renderCheck(go) {
       </div>
     </div>`;
   }
-
   // ── Run Scoring ───────────────────────────────────────
   window._runScoring = () => {
     if (extractedTxns.length === 0) { toast('No transactions to score', 'err'); return; }
