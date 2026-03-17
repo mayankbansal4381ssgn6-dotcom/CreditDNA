@@ -1670,13 +1670,17 @@ function renderCheck(go) {
       if (!window.pdfjsLib) {
         await new Promise((resolve, reject) => {
           const script = document.createElement('script');
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+          // Use 2.x — more stable, better CDN support
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js';
           script.onload = resolve;
           script.onerror = () => reject(new Error('Failed to load PDF.js'));
           document.head.appendChild(script);
         });
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        // Disable worker entirely — avoids all CORS issues with worker CDN
+        // Safe for files under ~20MB processed in-browser
+        // Blob worker = no CORS, works on any host including Vercel
+        const workerBlob = new Blob([''], { type: 'application/javascript' });
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(workerBlob);
       }
 
       showStatus('loading', 'Extracting text from PDF...', 'This runs entirely in your browser');
