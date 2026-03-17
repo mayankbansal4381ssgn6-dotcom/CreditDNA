@@ -3,11 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { DB, scoreColor, scoreTier, scorePct } from '@/lib/store';
 import { toast } from '@/lib/toast';
 
-// Use local worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.mjs',
-  import.meta.url,
-).toString();
+// Use CDN worker — avoids bundler issues on Vercel/Netlify
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 interface Props { go: (p: string) => void; }
 
