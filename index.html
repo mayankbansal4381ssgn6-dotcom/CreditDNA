@@ -927,21 +927,68 @@ function renderOCR(go) {
       </div>
       <div id="preview-container" style="display:none;" class="cdna-card" style="padding:20px;">
         <img id="preview-image" style="width:100%;max-height:250px;border-radius:10px;object-fit:cover;margin-bottom:12px;">
-        <button class="btn-primary btn-sm" style="width:100%;border-radius:10px;" onclick="alert('OCR processing demo')">🔍 Extract Text</button>
+        <button id="extract-btn" class="btn-primary btn-sm" style="width:100%;border-radius:10px;" onclick="startOCR()">🔍 Extract Text</button>
       </div>
     </div>
+    <div id="success-panel" style="display:none;"></div>
   </div>`;
 
+  // File preview
   document.getElementById('ocr-input').onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (e) => {
-      document.getElementById('preview-image').src = e.target.result;
+    reader.onload = (ev) => {
+      document.getElementById('preview-image').src = ev.target.result;
       document.getElementById('preview-container').style.display = 'block';
     };
     reader.readAsDataURL(file);
   };
+
+  // Drag & drop support (bonus)
+  const dropzone = document.getElementById('dropzone');
+  dropzone.ondragover = (e) => { e.preventDefault(); dropzone.style.borderColor = '#d4500f'; };
+  dropzone.ondragleave = () => { dropzone.style.borderColor = 'rgba(212,80,15,.3)'; };
+  dropzone.ondrop = (e) => {
+    e.preventDefault();
+    dropzone.style.borderColor = 'rgba(212,80,15,.3)';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        document.getElementById('preview-image').src = ev.target.result;
+        document.getElementById('preview-container').style.display = 'block';
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+}
+
+function startOCR() {
+  const btn = document.getElementById('extract-btn');
+  btn.innerHTML = `⏳ Processing...`;
+  btn.disabled = true;
+
+  setTimeout(() => {
+    btn.style.display = 'none';
+
+    // Your existing toast (already in your code)
+    toast('✅ OCR Complete!<br>47 fields extracted in 4.2s', 'ok');
+
+    // Show success panel
+    document.getElementById('success-panel').innerHTML = `
+      <div class="cdna-card" style="padding:28px;border-top:3px solid #0f7e5a;">
+        <div style="font-size:18px;font-weight:700;color:#0f7e5a;margin-bottom:16px;">📋 Extracted Data</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div><span style="font-size:13px;color:#8c7d6a;">Name</span><br><span style="font-weight:600;">Simon Paul</span></div>
+          <div><span style="font-size:13px;color:#8c7d6a;">PAN</span><br><span style="font-weight:600;">ABCDE1234F</span></div>
+          <div><span style="font-size:13px;color:#8c7d6a;">Aadhaar</span><br><span style="font-weight:600;">XXXX XXXX 9876</span></div>
+          <div><span style="font-size:13px;color:#8c7d6a;">Bank</span><br><span style="font-weight:600;">HDFC •••••• 4567</span></div>
+        </div>
+        <button onclick="window._go('dashboard')" class="btn-primary btn-full" style="margin-top:24px;border-radius:12px;">Add to Dashboard →</button>
+      </div>`;
+    document.getElementById('success-panel').style.display = 'block';
+  }, 1800);
 }
 
 function renderTransactions(go) {
