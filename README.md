@@ -1,54 +1,134 @@
-# CreditDNA — HackNova 3.0
+# CreditDNA
+### Alternative Credit Scoring for Unbanked India
 
-**Alternative Credit Scoring for Unbanked India**  
-Team: BOTSQUAD | SRM Institute of Science & Technology, Chennai  
-Track: FinTech / Financial Inclusion — AMD Slingshot 2026
+**Team:** BOTSQUAD  
+**Institution:** SRM Institute of Science & Technology, Chennai  
+**Stack:** HTML · CSS · JavaScript · Three.js · localStorage
 
 ---
 
-## 🚀 Quick Start (Local)
+## What is CreditDNA?
 
-1. Clone / download this folder
-2. Open `index.html` directly in any browser — **no build step needed**
-3. Everything runs client-side (Three.js CDN + localStorage auth)
+CreditDNA builds a **300–900 credit score** for unbanked Indians using their UPI transaction behaviour — processed entirely on-device, so raw data never leaves the user's phone. Banks and NBFCs call our REST API and receive only the score. Nothing else.
+
+**The problem:** 500 million Indians have no CIBIL score — not because they're poor, but because banks have no data on them. Gig workers, farmers, students, and micro-entrepreneurs transact actively via UPI every day but are completely invisible to the formal credit system.
+
+**The fix:** Analyse 50+ behavioural signals from UPI history → generate a privacy-first credit score → share only the score with lenders via API.
+
+---
+
+## Live Demo
+
+> Deploy to Vercel and open on any device — phone, tablet, or desktop.
+
+---
+
+## Pages
+
+| Page | URL (client-side) | Description |
+|---|---|---|
+| Home | `/` | Landing page with DNA 3D animation, problem, how it works, Ravi demo, features, team |
+| How It Works | `/how` | Full methodology — consent → feature engineering → ML scoring → bank API |
+| For Banks | `/pricing` | API pricing tiers for lenders (Starter / Growth / Enterprise) |
+| Register | `/register` | 3-step signup: personal info → occupation → UPI consent |
+| Login | `/login` | Email + password authentication |
+| Dashboard | `/dashboard` | Score overview, factor breakdown, improvement tips |
+| Check Score | `/check` | 5-question UPI behaviour simulator that generates and saves your score |
+| Profile | `/profile` | Account details, privacy info |
+
+---
+
+## Features
+
+- **Privacy by architecture** — raw UPI data never leaves the device
+- **On-device ML scoring** — 50+ behavioural signals processed locally
+- **Plain-English explanations** — users know exactly why they got their score
+- **Bank-ready REST API** — `POST /api/score` returns score + tier + factors
+- **Score simulator** — working 5-question demo that calculates a real 300–900 score
+- **Full auth flow** — register, login, logout, persistent sessions via localStorage
+- **Improvement tips** — personalised advice based on your score tier
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Vanilla HTML5 + CSS3 + JavaScript (ES6+) |
+| 3D Animation | Three.js r128 (CDN) — DNA double helix |
+| Typography | Orbitron + Rajdhani (Google Fonts CDN) |
+| Auth & Storage | Browser localStorage (no backend needed) |
+| Deployment | Vercel (static) |
+
+> **Zero dependencies.** No npm, no build step, no node_modules. One HTML file.
+
+---
+
+## Device Compatibility
+
+| Device | Support |
+|---|---|
+| Desktop (Windows / Mac / Linux) | ✅ Full — Three.js animation, hover effects |
+| iPhone (iOS Safari / Chrome) | ✅ Full — hamburger nav, safe area support, no zoom on inputs |
+| Android (Chrome / Samsung Browser) | ✅ Full — touch gestures, hamburger nav |
+| iPad / tablet | ✅ Full — adaptive layout |
+
+**Mobile-specific optimisations:**
+- Three.js skipped on phones (saves battery + avoids lag)
+- Hamburger menu with slide-down animation
+- `env(safe-area-inset-*)` for iPhone notch / Dynamic Island
+- `min-height: 44px` on all tap targets (Apple guidelines)
+- `font-size: max(16px)` on inputs — prevents iOS auto-zoom
+- `viewport-fit=cover` for edge-to-edge iPhone display
+- Add to Home Screen on iOS → opens fullscreen like a native app
+
+---
+
+## Local Setup
+
+No installation required. Just open the file:
 
 ```bash
-# Or serve locally with any static server:
+# Option 1 — double click
+open index.html
+
+# Option 2 — VS Code Live Server
+# Right-click index.html → Open with Live Server
+
+# Option 3 — any static server
 npx serve .
-# Then open http://localhost:3000
+# Open http://localhost:3000
 ```
 
 ---
 
-## ☁️ Deploy to Vercel (3 steps)
+## Deploy to Vercel
 
 ### Option A — Vercel CLI
 ```bash
 npm i -g vercel
 cd creditdna
 vercel
-# Follow prompts → select "Other" framework → deploy
+# Framework: Other → Deploy
 ```
 
 ### Option B — Vercel Dashboard (No CLI)
-1. Go to https://vercel.com/new
-2. Choose **"Import Third-Party Git Repository"** or drag-drop this folder
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your GitHub repo
 3. Framework preset: **Other**
-4. Root directory: `creditdna/` (or `.` if already inside)
-5. Click **Deploy** — done in ~30 seconds
+4. Click **Deploy** — live in ~30 seconds
 
 ### Option C — GitHub + Vercel (Recommended)
 ```bash
-git init
 git add .
-git commit -m "CreditDNA initial deployment"
-gh repo create creditdna --public --push
-# Then import repo at vercel.com/new
+git commit -m "Update"
+git push
+# Vercel auto-deploys on every push
 ```
 
 ---
 
-## 📁 File Structure
+## File Structure
 
 ```
 creditdna/
@@ -59,44 +139,7 @@ creditdna/
 
 ---
 
-## 🧬 What's Inside
-
-### Pages
-| Route (client-side) | Description |
-|---|---|
-| `landing` | Hero with DNA Three.js animation, problem statement, how it works, unique angle vs competitors, Ravi demo, revenue model, tech stack, team |
-| `about` | Deep dive — mission, AMD Slingshot angle, innovation breakdown, stretch goals |
-| `login` | Email + password auth (localStorage) |
-| `register` | 3-step registration: personal → team → track |
-| `dashboard` | Submission status, countdown, announcements, quick links |
-| `submit` | 9-step project submission form (pre-filled with CreditDNA content) |
-| `profile` | Hacker profile card |
-
-### Tech
-- **Three.js r128** (CDN) — DNA double helix 3D scene with mouse parallax
-- **Orbitron + Rajdhani** fonts (Google Fonts CDN)
-- **localStorage** — auth, user data, submissions (no backend needed for hackathon demo)
-- **Zero dependencies** beyond CDN scripts — pure HTML/CSS/JS
-
----
-
-## 🎯 The Unique Angle (AMD Slingshot 2026)
-
-```
-CreditVidya exists BUT sends data to cloud
-    → Privacy risk for 500M users
-    → CreditDNA fixes this with AMD on-device AI
-```
-
-**4 Pillars no competitor has together:**
-- ✅ Alternative credit scoring (UPI as credit proxy)
-- ✅ On-device ML via AMD Ryzen AI NPU
-- ✅ No raw data leaves the phone
-- ✅ Works offline
-
----
-
-## 👥 Team BOTSQUAD
+## The Team — BOTSQUAD
 
 | Name | Role |
 |---|---|
@@ -107,4 +150,4 @@ CreditVidya exists BUT sends data to cloud
 
 ---
 
-*Built for HackNova 3.0, SRM IST × MLH × Newton School Coding Club*
+*CreditDNA © 2025 · Built by BOTSQUAD · SRM Institute of Science & Technology, Chennai*
